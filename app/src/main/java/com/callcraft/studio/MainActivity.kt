@@ -983,12 +983,14 @@ fun ContactHistoryBottomSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
-                .padding(bottom = 36.dp),
+                .padding(top = 10.dp, bottom = 36.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Header: Contact Monogram Avatar & Details
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1029,14 +1031,20 @@ fun ContactHistoryBottomSheet(
                     }
                 }
 
-                IconButton(
-                    onClick = onDismiss,
+                Box(
                     modifier = Modifier
                         .size(32.dp)
                         .clip(CircleShape)
                         .background(LilacSurfaceVariant)
+                        .clickable(onClick = onDismiss),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = LilacTextMuted, modifier = Modifier.size(16.dp))
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = LilacTextMuted,
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             }
 
@@ -1353,11 +1361,13 @@ fun AddEditCallBottomSheet(
                 .imePadding()
                 .verticalScroll(scrollState)
                 .padding(horizontal = 24.dp)
-                .padding(bottom = 36.dp),
+                .padding(top = 10.dp, bottom = 36.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1368,14 +1378,20 @@ fun AddEditCallBottomSheet(
                     color = LilacText
                 )
 
-                IconButton(
-                    onClick = onDismiss,
+                Box(
                     modifier = Modifier
                         .size(32.dp)
                         .clip(CircleShape)
                         .background(LilacSurfaceVariant)
+                        .clickable(onClick = onDismiss),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = LilacTextMuted, modifier = Modifier.size(16.dp))
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = LilacTextMuted,
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             }
 
@@ -1877,11 +1893,13 @@ fun BulkActionsBottomSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
-                .padding(bottom = 36.dp),
+                .padding(top = 10.dp, bottom = 36.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1900,14 +1918,20 @@ fun BulkActionsBottomSheet(
                     )
                 }
 
-                IconButton(
-                    onClick = onDismiss,
+                Box(
                     modifier = Modifier
                         .size(32.dp)
                         .clip(CircleShape)
                         .background(LilacSurfaceVariant)
+                        .clickable(onClick = onDismiss),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = LilacTextMuted, modifier = Modifier.size(16.dp))
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = LilacTextMuted,
+                        modifier = Modifier.size(16.dp)
+                    )
                 }
             }
 
