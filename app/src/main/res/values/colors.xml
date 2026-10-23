@@ -1,0 +1,12 @@
+<resources>
+    <color name="primary">#6750A4</color>
+    <color name="primary_container">#E8DEF8</color>
+    <color name="on_primary_container">#21005D</color>
+    <color name="background">#FEF7FF</color>
+    <color name="surface_container">#F3EDF7</color>
+    <color name="surface_variant">#ECE6F0</color>
+    <color name="status_incoming">#10B981</color>
+    <color name="status_outgoing">#3B82F6</color>
+    <color name="status_missed">#F43F5E</color>
+    <color name="status_rejected">#F59E0B</color>
+</resources>
