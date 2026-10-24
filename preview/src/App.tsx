@@ -960,7 +960,7 @@ export default function App() {
                   }}
                 >
                   {/* Pane 1: All Groups */}
-                  <div className="w-1/2 h-full overflow-y-auto divide-y divide-[#E7E0EC]/70 px-4 pb-24">
+                  <div className="w-1/2 h-full overflow-y-auto no-scrollbar divide-y divide-[#E7E0EC]/70 px-4 pb-24">
                     {allFilteredGroups.length === 0 ? (
                       <div className="py-20 text-center text-sm text-[#79747E] font-medium">
                         No calls found
@@ -1067,7 +1067,7 @@ export default function App() {
                   </div>
 
                   {/* Pane 2: Missed Groups */}
-                  <div className="w-1/2 h-full overflow-y-auto divide-y divide-[#E7E0EC]/70 px-4 pb-24">
+                  <div className="w-1/2 h-full overflow-y-auto no-scrollbar divide-y divide-[#E7E0EC]/70 px-4 pb-24">
                     {missedFilteredGroups.length === 0 ? (
                       <div className="py-20 text-center text-sm text-[#79747E] font-medium">
                         No missed calls found
@@ -1154,7 +1154,7 @@ export default function App() {
             </div>
 
             {/* SCREEN 2: SETTINGS */}
-            <div className="w-full h-full shrink-0 flex flex-col overflow-y-auto px-4 py-4 space-y-4">
+            <div className="w-full h-full shrink-0 flex flex-col overflow-y-auto no-scrollbar px-4 py-4 space-y-4">
               {/* Header */}
               <div className="flex items-center gap-3 pb-2 border-b border-[#E7E0EC] shrink-0">
                 <button
@@ -1669,7 +1669,7 @@ export default function App() {
           <div className="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-end justify-center z-50 animate-in fade-in duration-150">
             <form
               onSubmit={handleSave}
-              className="bg-[#FEF7FF] text-[#1D1B20] w-full rounded-t-[36px] p-6 shadow-2xl flex flex-col space-y-4 max-h-[92%] overflow-y-auto border-t border-[#E7E0EC]"
+              className="bg-[#FEF7FF] text-[#1D1B20] w-full rounded-t-[36px] p-6 shadow-2xl flex flex-col space-y-4 max-h-[92%] overflow-y-auto no-scrollbar border-t border-[#E7E0EC]"
             >
               <div className="w-12 h-1 bg-[#79747E]/40 rounded-full mx-auto shrink-0 mb-1" />
 
@@ -2020,7 +2020,7 @@ export default function App() {
                 />
               </div>
 
-              <div className="overflow-y-auto space-y-1.5 pr-1 max-h-[280px]">
+              <div className="overflow-y-auto no-scrollbar space-y-1.5 pr-1 max-h-[280px]">
                 {MOCK_CONTACTS.filter(
                   (c) =>
                     c.name.toLowerCase().includes(contactSearch.toLowerCase()) ||
@@ -2054,7 +2054,7 @@ export default function App() {
         {/* Fake Call Simulator Setup Modal */}
         {isFakeCallModalOpen && (
           <div className="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-end justify-center z-50 animate-in fade-in duration-150">
-            <div className="bg-[#FEF7FF] text-[#1D1B20] w-full rounded-t-[28px] p-5 shadow-2xl flex flex-col space-y-2.5 max-h-[92%] overflow-y-auto border-t border-[#E7E0EC]">
+            <div className="bg-[#FEF7FF] text-[#1D1B20] w-full rounded-t-[28px] p-5 shadow-2xl flex flex-col space-y-2.5 max-h-[92%] overflow-y-auto no-scrollbar border-t border-[#E7E0EC]">
               <div className="w-10 h-1 bg-[#79747E]/40 rounded-full mx-auto shrink-0 mb-0.5" />
 
               {/* Header */}
