@@ -13,7 +13,6 @@ import {
   MoreVertical,
   ArrowLeft,
   ShieldCheck,
-  ShieldAlert,
   Check,
   Clock,
   CheckCheck,
@@ -34,12 +33,9 @@ import {
   ChevronUp,
   Copy,
   ExternalLink,
-  Mail,
   Bug,
-  Github,
   Download,
-  RefreshCw,
-  LayoutGrid
+  RefreshCw
 } from 'lucide-react';
 
 export type CallType = 1 | 2 | 3 | 5; // 1: Incoming, 2: Outgoing, 3: Missed, 5: Rejected
@@ -1143,51 +1139,29 @@ export default function App() {
 
               {/* SECTION 1: PERMISSIONS & SYSTEM DIAGNOSTICS */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between px-1">
-                  <span className="text-[11px] font-bold text-[#6750A4] uppercase tracking-wider">
-                    Permissions & Diagnostics
-                  </span>
-                  <button
-                    onClick={() => {
-                      setIsDialerRoleGranted(true);
-                      setHasCallLogPermission(true);
-                      setHasContactsPermission(true);
-                      setHasPhoneStatePermission(true);
-                      triggerCopy('Diagnostics', 'All system permissions re-verified');
-                    }}
-                    className="p-1 rounded-full text-[#6750A4] hover:bg-[#6750A4]/10 transition"
-                    title="Refresh Diagnostics"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                <span className="text-[11px] font-bold text-[#6750A4] uppercase tracking-wider px-1 block">
+                  System & Permissions
+                </span>
 
-                <div className="bg-[#FEF7FF] rounded-[24px] p-4 border border-[#E7E0EC] shadow-xs space-y-3.5">
+                <div className="bg-[#FEF7FF] rounded-[20px] p-4 border border-[#E7E0EC] shadow-xs space-y-3">
                   {/* Item 1: Dialer Role */}
                   <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-                        isDialerRoleGranted ? 'bg-[#10B981]/15 text-[#10B981]' : 'bg-[#6750A4]/15 text-[#6750A4]'
-                      }`}>
-                        {isDialerRoleGranted ? <ShieldCheck className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5" />}
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="text-sm font-bold text-[#1D1B20] leading-tight">Default Dialer Role</h3>
-                        <p className="text-[11px] text-[#49454F] font-medium leading-tight mt-0.5">Required to edit system call logs</p>
-                      </div>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <ShieldCheck className={`w-5 h-5 shrink-0 ${isDialerRoleGranted ? 'text-[#10B981]' : 'text-[#6750A4]'}`} />
+                      <span className="text-sm font-semibold text-[#1D1B20]">Default Dialer Role</span>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => setIsDialerRoleGranted(!isDialerRoleGranted)}
-                      style={{ width: '48px', height: '28px' }}
+                      style={{ width: '44px', height: '26px' }}
                       className={`relative inline-flex shrink-0 items-center rounded-full p-0.5 transition-colors duration-300 ${
                         isDialerRoleGranted ? 'bg-[#6750A4]' : 'bg-[#ECE6F0] border border-[#E7E0EC]'
                       }`}
                     >
                       <span
                         className={`pointer-events-none inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white shadow-md transition duration-300 ${
-                          isDialerRoleGranted ? 'translate-x-5' : 'translate-x-0.5'
+                          isDialerRoleGranted ? 'translate-x-4' : 'translate-x-0'
                         }`}
                       >
                         {isDialerRoleGranted && <Check className="w-3 h-3 text-[#6750A4] stroke-[3]" />}
@@ -1195,14 +1169,11 @@ export default function App() {
                     </button>
                   </div>
 
-                  <div className="h-px bg-[#E7E0EC]/60" />
+                  <div className="h-px bg-[#E7E0EC]/50" />
 
                   {/* Item 2: Call Log Access */}
                   <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-[#1D1B20]">Call Log Access</div>
-                      <div className="text-[10px] text-[#79747E]">READ_CALL_LOG & WRITE_CALL_LOG</div>
-                    </div>
+                    <span className="text-xs font-medium text-[#1D1B20]">Call Logs Access</span>
                     {hasCallLogPermission ? (
                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#10B981]/15 text-[#10B981] text-[10px] font-bold">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" /> Granted
@@ -1210,7 +1181,7 @@ export default function App() {
                     ) : (
                       <button
                         onClick={() => setHasCallLogPermission(true)}
-                        className="px-2.5 py-1 rounded-lg bg-[#F59E0B] text-white text-[10px] font-bold"
+                        className="px-2 py-0.5 rounded-md bg-[#F59E0B] text-white text-[10px] font-bold"
                       >
                         Grant
                       </button>
@@ -1219,10 +1190,7 @@ export default function App() {
 
                   {/* Item 3: Contacts Access */}
                   <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-[#1D1B20]">Contacts Access</div>
-                      <div className="text-[10px] text-[#79747E]">READ_CONTACTS (Names & Monograms)</div>
-                    </div>
+                    <span className="text-xs font-medium text-[#1D1B20]">Contacts Access</span>
                     {hasContactsPermission ? (
                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#10B981]/15 text-[#10B981] text-[10px] font-bold">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" /> Granted
@@ -1230,7 +1198,7 @@ export default function App() {
                     ) : (
                       <button
                         onClick={() => setHasContactsPermission(true)}
-                        className="px-2.5 py-1 rounded-lg bg-[#F59E0B] text-white text-[10px] font-bold"
+                        className="px-2 py-0.5 rounded-md bg-[#F59E0B] text-white text-[10px] font-bold"
                       >
                         Grant
                       </button>
@@ -1239,10 +1207,7 @@ export default function App() {
 
                   {/* Item 4: Phone State Access */}
                   <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-[#1D1B20]">Phone State Access</div>
-                      <div className="text-[10px] text-[#79747E]">READ_PHONE_STATE (Carrier & SIM info)</div>
-                    </div>
+                    <span className="text-xs font-medium text-[#1D1B20]">Phone State Access</span>
                     {hasPhoneStatePermission ? (
                       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#10B981]/15 text-[#10B981] text-[10px] font-bold">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" /> Granted
@@ -1250,20 +1215,18 @@ export default function App() {
                     ) : (
                       <button
                         onClick={() => setHasPhoneStatePermission(true)}
-                        className="px-2.5 py-1 rounded-lg bg-[#F59E0B] text-white text-[10px] font-bold"
+                        className="px-2 py-0.5 rounded-md bg-[#F59E0B] text-white text-[10px] font-bold"
                       >
                         Grant
                       </button>
                     )}
                   </div>
 
-                  {/* Open App Settings Button */}
                   <button
-                    onClick={() => triggerCopy('System Settings', 'Opened App Permissions Settings')}
-                    className="w-full mt-1 py-2 px-3 rounded-xl border border-[#6750A4]/30 text-[#6750A4] text-xs font-bold flex items-center justify-center gap-2 hover:bg-[#6750A4]/5 transition"
+                    onClick={() => triggerCopy('Settings', 'Opened System Settings')}
+                    className="w-full text-center text-xs font-semibold text-[#6750A4] pt-1 hover:underline transition"
                   >
-                    <SettingsIcon className="w-3.5 h-3.5" />
-                    <span>Open App System Settings</span>
+                    Open System App Settings
                   </button>
                 </div>
               </div>
@@ -1274,57 +1237,61 @@ export default function App() {
                   Developer & Community
                 </span>
 
-                <div className="bg-[#FEF7FF] rounded-[24px] p-4 border border-[#E7E0EC] shadow-xs space-y-3">
-                  {/* Sachin Mandawi Profile */}
+                <div className="bg-[#FEF7FF] rounded-[20px] p-3.5 border border-[#E7E0EC] shadow-xs space-y-2.5">
+                  {/* Sachin Mandawi Profile (Real Avatar) */}
                   <a
                     href="https://github.com/sachinmandawi"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-3 group text-left hover:opacity-90 transition"
+                    className="flex items-center justify-between gap-3 group text-left hover:opacity-90 transition py-1"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-[#6750A4]/10 text-[#6750A4] flex items-center justify-center shrink-0">
-                        <Github className="w-4 h-4" />
-                      </div>
+                      <img
+                        src="/sachin_avatar.png"
+                        alt="Sachin Mandawi"
+                        className="w-8 h-8 rounded-full object-cover border border-[#E7E0EC] shrink-0"
+                      />
                       <div className="min-w-0">
                         <div className="text-xs font-bold text-[#1D1B20]">Sachin Mandawi</div>
-                        <div className="text-[10px] text-[#79747E]">Lead Developer • @sachinmandawi on GitHub</div>
+                        <div className="text-[10px] text-[#79747E]">GitHub Profile</div>
                       </div>
                     </div>
                     <ExternalLink className="w-4 h-4 text-[#79747E] group-hover:text-[#6750A4] transition shrink-0" />
                   </a>
 
-                  <div className="h-px bg-[#E7E0EC]/60" />
+                  <div className="h-px bg-[#E7E0EC]/50" />
 
-                  {/* CallCraft Repository */}
+                  {/* CallCraft Repository (Real CallCraft Logo) */}
                   <a
                     href="https://github.com/sachinmandawi/Call-Craft"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-3 group text-left hover:opacity-90 transition"
+                    className="flex items-center justify-between gap-3 group text-left hover:opacity-90 transition py-1"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-[#6750A4]/10 text-[#6750A4] flex items-center justify-center shrink-0">
-                        <Smartphone className="w-4 h-4" />
-                      </div>
+                      <img
+                        src="/logo.png"
+                        alt="CallCraft"
+                        className="w-8 h-8 rounded-lg object-cover border border-[#E7E0EC] shrink-0"
+                      />
                       <div className="min-w-0">
                         <div className="text-xs font-bold text-[#1D1B20]">CallCraft Repository</div>
-                        <div className="text-[10px] text-[#79747E]">Source code & releases on GitHub</div>
+                        <div className="text-[10px] text-[#79747E]">Source code & releases</div>
                       </div>
                     </div>
                     <ExternalLink className="w-4 h-4 text-[#79747E] group-hover:text-[#6750A4] transition shrink-0" />
                   </a>
 
-                  <div className="h-px bg-[#E7E0EC]/60" />
+                  <div className="h-px bg-[#E7E0EC]/50" />
 
-                  {/* Contact Developer (Email) */}
+                  {/* Contact Developer (Official Gmail Icon) */}
                   <a
                     href="mailto:sachinmandawi@gmail.com?subject=CallCraft%20Inquiry"
-                    className="flex items-center justify-between gap-3 group text-left hover:opacity-90 transition"
+                    className="flex items-center justify-between gap-3 group text-left hover:opacity-90 transition py-1"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-[#6750A4]/10 text-[#6750A4] flex items-center justify-center shrink-0">
-                        <Mail className="w-4 h-4" />
+                      <div className="w-8 h-8 rounded-lg bg-white border border-[#E7E0EC] flex items-center justify-center shrink-0 p-1">
+                        <img src="/gmail_logo.svg" alt="Gmail" className="w-4 h-4 object-contain" />
                       </div>
                       <div className="min-w-0">
                         <div className="text-xs font-bold text-[#1D1B20]">Contact Developer</div>
@@ -1334,22 +1301,22 @@ export default function App() {
                     <ExternalLink className="w-4 h-4 text-[#79747E] group-hover:text-[#6750A4] transition shrink-0" />
                   </a>
 
-                  <div className="h-px bg-[#E7E0EC]/60" />
+                  <div className="h-px bg-[#E7E0EC]/50" />
 
                   {/* Report an Issue */}
                   <a
                     href="https://github.com/sachinmandawi/Call-Craft/issues/new"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-3 group text-left hover:opacity-90 transition"
+                    className="flex items-center justify-between gap-3 group text-left hover:opacity-90 transition py-1"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-xl bg-[#F43F5E]/10 text-[#F43F5E] flex items-center justify-center shrink-0">
+                      <div className="w-8 h-8 rounded-lg bg-[#F43F5E]/10 text-[#F43F5E] flex items-center justify-center shrink-0">
                         <Bug className="w-4 h-4" />
                       </div>
                       <div className="min-w-0">
-                        <div className="text-xs font-bold text-[#1D1B20]">Report an Issue / Bug</div>
-                        <div className="text-[10px] text-[#79747E]">Submit bug report on GitHub Issues</div>
+                        <div className="text-xs font-bold text-[#1D1B20]">Report an Issue</div>
+                        <div className="text-[10px] text-[#79747E]">GitHub Issues</div>
                       </div>
                     </div>
                     <ExternalLink className="w-4 h-4 text-[#79747E] group-hover:text-[#6750A4] transition shrink-0" />
@@ -1357,31 +1324,33 @@ export default function App() {
                 </div>
               </div>
 
-              {/* SECTION 3: OTHER APPS BY DEVELOPER */}
+              {/* SECTION 3: OTHER APPS (CleanBar with real logo) */}
               <div className="space-y-2">
                 <span className="text-[11px] font-bold text-[#6750A4] uppercase tracking-wider px-1 block">
-                  Other Apps by Developer
+                  Other Apps
                 </span>
 
                 <a
                   href="https://github.com/sachinmandawi/CleanBar"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block bg-[#FEF7FF] rounded-[24px] p-4 border border-[#E7E0EC] shadow-xs hover:border-[#6750A4]/40 transition group"
+                  className="block bg-[#FEF7FF] rounded-[20px] p-3.5 border border-[#E7E0EC] shadow-xs hover:border-[#6750A4]/40 transition group"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-[#0284C7]/15 text-[#0284C7] flex items-center justify-center shrink-0">
-                      <LayoutGrid className="w-5 h-5" />
-                    </div>
+                    <img
+                      src="/cleanbar_logo.png"
+                      alt="CleanBar"
+                      className="w-9 h-9 rounded-xl object-cover border border-[#E7E0EC] shrink-0"
+                    />
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-[#1D1B20]">CleanBar</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-[#1D1B20]">CleanBar</span>
                         <span className="px-1.5 py-0.5 rounded bg-[#E8DEF8] text-[#21005D] text-[9px] font-bold">
-                          Zero Root
+                          No Root
                         </span>
                       </div>
-                      <p className="text-[11px] text-[#49454F] leading-snug mt-0.5">
-                        Status Bar & System Icon Hider powered by Shizuku.
+                      <p className="text-[11px] text-[#49454F] mt-0.5 truncate">
+                        Status Bar Hider via Shizuku
                       </p>
                     </div>
                     <ExternalLink className="w-4 h-4 text-[#79747E] group-hover:text-[#6750A4] transition shrink-0" />
@@ -1389,7 +1358,7 @@ export default function App() {
                 </a>
               </div>
 
-              {/* SECTION 4: SUPPORT DEVELOPER (Reference UI Design) */}
+              {/* SECTION 4: SUPPORT DEVELOPER (App-Themed, Original Icons) */}
               <div className="space-y-2">
                 <span className="text-[11px] font-bold text-[#6750A4] uppercase tracking-wider px-1 block">
                   Support Developer
@@ -1398,22 +1367,26 @@ export default function App() {
                 {/* UPI Card */}
                 <div
                   onClick={() => triggerCopy('UPI ID', 'darkcaptain@ybl')}
-                  className="bg-[#1E1E1E] text-white rounded-[18px] px-4 py-3.5 flex items-center justify-between cursor-pointer hover:bg-[#252525] transition shadow-sm active:scale-[0.99]"
+                  className="bg-[#FEF7FF] rounded-[18px] p-3 border border-[#E7E0EC] flex items-center justify-between cursor-pointer hover:border-[#6750A4]/40 transition shadow-xs group"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-6 h-6 rounded-md bg-[#2A2A2A] flex items-center justify-center text-[#10B981] font-black text-xs shrink-0">
-                      ▲
+                    <div className="w-9 h-9 rounded-xl bg-white border border-[#E7E0EC] flex items-center justify-center shrink-0 p-1">
+                      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
+                        <path d="M5 4.5L12.5 12L5 19.5H8.5L16 12L8.5 4.5H5Z" fill="#097939" />
+                        <path d="M11.5 4.5L19 12L11.5 19.5H15L22.5 12L15 4.5H11.5Z" fill="#F37021" />
+                      </svg>
                     </div>
-                    <span className="text-sm font-semibold tracking-wide truncate">
-                      UPI • darkcaptain@ybl
-                    </span>
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-bold text-[#79747E] uppercase tracking-wider">UPI</div>
+                      <div className="text-xs font-bold text-[#1D1B20] font-mono truncate">darkcaptain@ybl</div>
+                    </div>
                   </div>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       triggerCopy('UPI ID', 'darkcaptain@ybl');
                     }}
-                    className="p-1 rounded text-[#9E9E9E] hover:text-white transition shrink-0"
+                    className="p-1.5 rounded-lg text-[#6750A4] hover:bg-[#6750A4]/10 transition shrink-0"
                     title="Copy UPI ID"
                   >
                     <Copy className="w-4 h-4" />
@@ -1423,22 +1396,25 @@ export default function App() {
                 {/* Binance Card */}
                 <div
                   onClick={() => triggerCopy('Binance ID', '1138545342')}
-                  className="bg-[#1E1E1E] text-white rounded-[18px] px-4 py-3.5 flex items-center justify-between cursor-pointer hover:bg-[#252525] transition shadow-sm active:scale-[0.99]"
+                  className="bg-[#FEF7FF] rounded-[18px] p-3 border border-[#E7E0EC] flex items-center justify-between cursor-pointer hover:border-[#6750A4]/40 transition shadow-xs group"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-6 h-6 rounded-md bg-[#F0B90B] flex items-center justify-center text-black font-black text-xs shrink-0">
-                      ❖
+                    <div className="w-9 h-9 rounded-xl bg-[#F0B90B]/15 border border-[#F0B90B]/30 flex items-center justify-center shrink-0 p-1">
+                      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="#F0B90B">
+                        <path d="M12 9.36L14.64 12L12 14.64L9.36 12L12 9.36ZM12 2L16.62 6.62L13.91 9.34L12 7.43L10.09 9.34L7.38 6.62L12 2ZM12 22L7.38 17.38L10.09 14.66L12 16.57L13.91 14.66L16.62 17.38L12 22ZM2 12L4.72 9.28L7.43 12L4.72 14.72L2 12ZM22 12L19.28 9.28L16.57 12L19.28 14.72L22 12Z" />
+                      </svg>
                     </div>
-                    <span className="text-sm font-semibold tracking-wide truncate">
-                      Binance • 1138545342
-                    </span>
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-bold text-[#79747E] uppercase tracking-wider">Binance Pay</div>
+                      <div className="text-xs font-bold text-[#1D1B20] font-mono truncate">1138545342</div>
+                    </div>
                   </div>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       triggerCopy('Binance ID', '1138545342');
                     }}
-                    className="p-1 rounded text-[#9E9E9E] hover:text-white transition shrink-0"
+                    className="p-1.5 rounded-lg text-[#6750A4] hover:bg-[#6750A4]/10 transition shrink-0"
                     title="Copy Binance ID"
                   >
                     <Copy className="w-4 h-4" />
@@ -1449,58 +1425,58 @@ export default function App() {
               {/* SECTION 5: APP VERSION & IN-PLACE UPDATER */}
               <div className="space-y-2">
                 <span className="text-[11px] font-bold text-[#6750A4] uppercase tracking-wider px-1 block">
-                  Updates & App Info
+                  About & Updates
                 </span>
 
-                <div className="bg-[#FEF7FF] rounded-[24px] p-4 border border-[#E7E0EC] shadow-xs space-y-3">
+                <div className="bg-[#FEF7FF] rounded-[20px] p-3.5 border border-[#E7E0EC] shadow-xs space-y-2.5">
                   <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-black text-[#1D1B20]">
-                        Call<span className="text-[#6750A4]">Craft</span>
+                    <div className="flex items-center gap-2.5">
+                      <img src="/logo.png" alt="CallCraft" className="w-7 h-7 rounded-lg border border-[#E7E0EC]" />
+                      <div>
+                        <div className="text-xs font-black text-[#1D1B20]">
+                          Call<span className="text-[#6750A4]">Craft</span>
+                        </div>
+                        <div className="text-[10px] text-[#79747E] font-medium">Version 1.0.0</div>
                       </div>
-                      <div className="text-[11px] text-[#79747E] font-medium">Installed Version: v1.0.0 (Build 1)</div>
                     </div>
 
                     <button
                       onClick={checkGithubUpdates}
                       disabled={updateStatus === 'checking'}
-                      className="px-3.5 py-1.5 rounded-xl bg-[#6750A4] hover:bg-[#553F8D] text-white text-xs font-bold flex items-center gap-1.5 transition disabled:opacity-60 shadow-xs"
+                      className="px-3 py-1 rounded-lg bg-[#6750A4] hover:bg-[#553F8D] text-white text-xs font-bold flex items-center gap-1.5 transition disabled:opacity-60 shadow-xs"
                     >
-                      <RefreshCw className={`w-3.5 h-3.5 ${updateStatus === 'checking' ? 'animate-spin' : ''}`} />
+                      <RefreshCw className={`w-3 h-3 ${updateStatus === 'checking' ? 'animate-spin' : ''}`} />
                       <span>{updateStatus === 'checking' ? 'Checking...' : 'Check Update'}</span>
                     </button>
                   </div>
 
                   {updateStatus === 'latest' && (
-                    <div className="p-2.5 rounded-xl bg-[#10B981]/10 text-[#10B981] flex items-center gap-2">
-                      <Check className="w-4 h-4 shrink-0" />
-                      <span className="text-xs font-bold">You are on the latest version (v1.0.0)!</span>
+                    <div className="px-2.5 py-1.5 rounded-lg bg-[#10B981]/10 text-[#10B981] flex items-center gap-2">
+                      <Check className="w-3.5 h-3.5 shrink-0" />
+                      <span className="text-xs font-bold">v1.0.0 is the latest version</span>
                     </div>
                   )}
 
                   {updateStatus === 'available' && latestReleaseInfo && (
-                    <div className="p-3 rounded-2xl bg-[#E8DEF8] border border-[#6750A4]/30 space-y-2">
+                    <div className="p-2.5 rounded-xl bg-[#E8DEF8] border border-[#6750A4]/30 space-y-1.5">
                       <div className="text-xs font-bold text-[#21005D]">
-                        New Release Available: v{latestReleaseInfo.version}
+                        Update Available: v{latestReleaseInfo.version}
                       </div>
-                      <p className="text-[11px] text-[#49454F] leading-tight">
-                        Seamless in-place update. No deletion or uninstallation of old APK required.
-                      </p>
                       <a
                         href={latestReleaseInfo.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-[#6750A4] text-white text-xs font-bold hover:bg-[#553F8D] transition"
+                        className="inline-flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg bg-[#6750A4] text-white text-xs font-bold hover:bg-[#553F8D] transition"
                       >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Download & Install Update</span>
+                        <Download className="w-3 h-3" />
+                        <span>Install Update (In-Place)</span>
                       </a>
                     </div>
                   )}
 
                   {updateStatus === 'error' && (
-                    <div className="p-2.5 rounded-xl bg-[#F43F5E]/10 text-[#F43F5E] text-xs font-medium">
-                      Unable to connect to GitHub Releases API.
+                    <div className="px-2.5 py-1.5 rounded-lg bg-[#F43F5E]/10 text-[#F43F5E] text-xs font-medium">
+                      Failed to check update.
                     </div>
                   )}
                 </div>
