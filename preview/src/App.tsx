@@ -29,7 +29,9 @@ import {
   Pause,
   Disc,
   Video,
-  Users
+  Users,
+  MessageSquare,
+  ChevronUp
 } from 'lucide-react';
 
 export type CallType = 1 | 2 | 3 | 5; // 1: Incoming, 2: Outgoing, 3: Missed, 5: Rejected
@@ -1980,28 +1982,37 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="pb-8 px-4 flex items-center justify-between">
-                  <div className="flex flex-col items-center gap-1.5">
-                    <button
-                      onClick={() => {
-                        setFakeCallState('active');
-                        setFakeCallElapsedSec(0);
-                      }}
-                      className="w-16 h-16 rounded-full bg-[#22C55E] hover:bg-emerald-600 flex items-center justify-center text-white shadow-xl shadow-emerald-950/50 transform active:scale-90 transition animate-pulse"
-                    >
-                      <Phone className="w-7 h-7 fill-white text-white" />
-                    </button>
-                    <span className="text-xs font-semibold text-white">Answer</span>
+                <div className="pb-6 px-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col items-center gap-1.5">
+                      <button
+                        onClick={() => {
+                          setFakeCallState('active');
+                          setFakeCallElapsedSec(0);
+                        }}
+                        className="w-16 h-16 rounded-full bg-[#22C55E] hover:bg-emerald-600 flex items-center justify-center text-white shadow-xl shadow-emerald-950/50 transform active:scale-90 transition animate-pulse"
+                      >
+                        <Phone className="w-7 h-7 fill-white text-white" />
+                      </button>
+                      <span className="text-xs font-semibold text-white">Answer</span>
+                    </div>
+
+                    <div className="flex flex-col items-center gap-1.5">
+                      <button
+                        onClick={() => setFakeCallState('idle')}
+                        className="w-16 h-16 rounded-full bg-[#EF4444] hover:bg-red-600 flex items-center justify-center text-white shadow-xl shadow-red-950/50 transform active:scale-90 transition"
+                      >
+                        <Phone className="w-7 h-7 fill-white text-white rotate-[135deg]" />
+                      </button>
+                      <span className="text-xs font-semibold text-white">Decline</span>
+                    </div>
                   </div>
 
-                  <div className="flex flex-col items-center gap-1.5">
-                    <button
-                      onClick={() => setFakeCallState('idle')}
-                      className="w-16 h-16 rounded-full bg-[#EF4444] hover:bg-red-600 flex items-center justify-center text-white shadow-xl shadow-red-950/50 transform active:scale-90 transition"
-                    >
-                      <Phone className="w-7 h-7 fill-white text-white rotate-[135deg]" />
-                    </button>
-                    <span className="text-xs font-semibold text-white">Decline</span>
+                  <div className="flex justify-center">
+                    <div className="px-5 py-1.5 rounded-full bg-white/10 text-white/90 text-xs font-medium flex items-center gap-1.5 backdrop-blur-md border border-white/5 shadow-xs">
+                      <ChevronUp className="w-3.5 h-3.5 text-white/80" />
+                      <span>Send message</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2020,28 +2031,37 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="pb-8 px-5 flex items-center justify-between">
-                  <div className="flex flex-col items-center gap-1.5">
-                    <button
-                      onClick={() => setFakeCallState('idle')}
-                      className="w-16 h-16 rounded-full bg-[#EF4444] hover:bg-red-600 flex items-center justify-center text-white shadow-xl transform active:scale-90 transition"
-                    >
-                      <Phone className="w-7 h-7 fill-white text-white rotate-[135deg]" />
-                    </button>
-                    <span className="text-[11px] font-medium text-[#A1A1AA]">Decline</span>
+                <div className="pb-6 px-5 space-y-4">
+                  <div className="flex justify-center">
+                    <div className="px-4 py-1.5 rounded-full bg-[#27272A] border border-[#3F3F46] text-[#A1A1AA] text-xs font-medium flex items-center gap-1.5 shadow-sm">
+                      <MessageSquare className="w-3.5 h-3.5 text-[#A1A1AA]" />
+                      <span>Quick response</span>
+                    </div>
                   </div>
 
-                  <div className="flex flex-col items-center gap-1.5">
-                    <button
-                      onClick={() => {
-                        setFakeCallState('active');
-                        setFakeCallElapsedSec(0);
-                      }}
-                      className="w-16 h-16 rounded-full bg-[#10B981] hover:bg-emerald-600 flex items-center justify-center text-white shadow-xl transform active:scale-90 transition animate-pulse"
-                    >
-                      <Phone className="w-7 h-7 fill-white text-white" />
-                    </button>
-                    <span className="text-[11px] font-medium text-[#A1A1AA]">Answer</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col items-center gap-1.5">
+                      <button
+                        onClick={() => setFakeCallState('idle')}
+                        className="w-16 h-16 rounded-full bg-[#EF4444] hover:bg-red-600 flex items-center justify-center text-white shadow-xl transform active:scale-90 transition"
+                      >
+                        <Phone className="w-7 h-7 fill-white text-white rotate-[135deg]" />
+                      </button>
+                      <span className="text-[11px] font-medium text-[#A1A1AA]">Decline</span>
+                    </div>
+
+                    <div className="flex flex-col items-center gap-1.5">
+                      <button
+                        onClick={() => {
+                          setFakeCallState('active');
+                          setFakeCallElapsedSec(0);
+                        }}
+                        className="w-16 h-16 rounded-full bg-[#10B981] hover:bg-emerald-600 flex items-center justify-center text-white shadow-xl transform active:scale-90 transition animate-pulse"
+                      >
+                        <Phone className="w-7 h-7 fill-white text-white" />
+                      </button>
+                      <span className="text-[11px] font-medium text-[#A1A1AA]">Answer</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2059,28 +2079,48 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="pb-10 px-5 flex items-center justify-between">
-                  <div className="flex flex-col items-center gap-2">
-                    <button
-                      onClick={() => setFakeCallState('idle')}
-                      className="w-[68px] h-[68px] rounded-full bg-[#FF3B30] hover:bg-red-600 flex items-center justify-center text-white shadow-xl transform active:scale-90 transition"
-                    >
-                      <Phone className="w-8 h-8 fill-white text-white rotate-[135deg]" />
-                    </button>
-                    <span className="text-xs font-normal text-white">decline</span>
+                <div className="pb-8 px-6 space-y-6">
+                  {/* iOS Signature Auxiliary Controls: Remind Me & Message */}
+                  <div className="flex items-center justify-around px-2">
+                    <div className="flex flex-col items-center gap-1.5">
+                      <div className="w-12 h-12 rounded-full bg-white/15 backdrop-blur-md flex items-center justify-center text-white shadow-md border border-white/5">
+                        <Clock className="w-5 h-5 text-white" />
+                      </div>
+                      <span className="text-[11px] font-normal text-white">remind me</span>
+                    </div>
+
+                    <div className="flex flex-col items-center gap-1.5">
+                      <div className="w-12 h-12 rounded-full bg-white/15 backdrop-blur-md flex items-center justify-center text-white shadow-md border border-white/5">
+                        <MessageSquare className="w-5 h-5 text-white" />
+                      </div>
+                      <span className="text-[11px] font-normal text-white">message</span>
+                    </div>
                   </div>
 
-                  <div className="flex flex-col items-center gap-2">
-                    <button
-                      onClick={() => {
-                        setFakeCallState('active');
-                        setFakeCallElapsedSec(0);
-                      }}
-                      className="w-[68px] h-[68px] rounded-full bg-[#34C759] hover:bg-emerald-500 flex items-center justify-center text-white shadow-xl transform active:scale-90 transition animate-pulse"
-                    >
-                      <Phone className="w-8 h-8 fill-white text-white" />
-                    </button>
-                    <span className="text-xs font-normal text-white">accept</span>
+                  {/* iOS Primary Action Controls: Decline (red) & Accept (green) */}
+                  <div className="flex items-center justify-between px-2">
+                    <div className="flex flex-col items-center gap-2">
+                      <button
+                        onClick={() => setFakeCallState('idle')}
+                        className="w-[68px] h-[68px] rounded-full bg-[#FF3B30] hover:bg-red-600 flex items-center justify-center text-white shadow-xl shadow-red-950/60 transform active:scale-90 transition"
+                      >
+                        <Phone className="w-8 h-8 fill-white text-white rotate-[135deg]" />
+                      </button>
+                      <span className="text-xs font-normal text-white">decline</span>
+                    </div>
+
+                    <div className="flex flex-col items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setFakeCallState('active');
+                          setFakeCallElapsedSec(0);
+                        }}
+                        className="w-[68px] h-[68px] rounded-full bg-[#34C759] hover:bg-emerald-500 flex items-center justify-center text-white shadow-xl shadow-emerald-950/60 transform active:scale-90 transition animate-pulse"
+                      >
+                        <Phone className="w-8 h-8 fill-white text-white" />
+                      </button>
+                      <span className="text-xs font-normal text-white">accept</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2109,28 +2149,37 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="pb-8 px-4 flex items-center justify-around">
-                  <div className="flex flex-col items-center gap-1.5">
-                    <button
-                      onClick={() => setFakeCallState('idle')}
-                      className="w-16 h-16 rounded-full bg-[#BA1A1A] hover:bg-[#DC2626] flex items-center justify-center text-white shadow-xl shadow-red-950/50 transform active:scale-90 transition"
-                    >
-                      <Phone className="w-7 h-7 fill-white text-white rotate-[135deg]" />
-                    </button>
-                    <span className="text-xs font-medium text-[#CAC4D0]">Decline</span>
+                <div className="pb-6 px-4 space-y-4">
+                  <div className="flex justify-center">
+                    <div className="px-4 py-1.5 rounded-full bg-[#2B2930] text-[#D0BCFF] text-xs font-semibold flex items-center gap-1.5 border border-white/5 shadow-sm">
+                      <MessageSquare className="w-3.5 h-3.5 text-[#D0BCFF]" />
+                      <span>Reply</span>
+                    </div>
                   </div>
 
-                  <div className="flex flex-col items-center gap-1.5">
-                    <button
-                      onClick={() => {
-                        setFakeCallState('active');
-                        setFakeCallElapsedSec(0);
-                      }}
-                      className="w-16 h-16 rounded-full bg-[#1E8E3E] hover:bg-emerald-600 flex items-center justify-center text-white shadow-xl shadow-emerald-950/50 transform active:scale-90 transition animate-bounce"
-                    >
-                      <Phone className="w-7 h-7 fill-white text-white" />
-                    </button>
-                    <span className="text-xs font-medium text-[#CAC4D0]">Answer</span>
+                  <div className="flex items-center justify-around">
+                    <div className="flex flex-col items-center gap-1.5">
+                      <button
+                        onClick={() => setFakeCallState('idle')}
+                        className="w-16 h-16 rounded-full bg-[#BA1A1A] hover:bg-[#DC2626] flex items-center justify-center text-white shadow-xl shadow-red-950/50 transform active:scale-90 transition"
+                      >
+                        <Phone className="w-7 h-7 fill-white text-white rotate-[135deg]" />
+                      </button>
+                      <span className="text-xs font-medium text-[#CAC4D0]">Decline</span>
+                    </div>
+
+                    <div className="flex flex-col items-center gap-1.5">
+                      <button
+                        onClick={() => {
+                          setFakeCallState('active');
+                          setFakeCallElapsedSec(0);
+                        }}
+                        className="w-16 h-16 rounded-full bg-[#1E8E3E] hover:bg-emerald-600 flex items-center justify-center text-white shadow-xl shadow-emerald-950/50 transform active:scale-90 transition animate-bounce"
+                      >
+                        <Phone className="w-7 h-7 fill-white text-white" />
+                      </button>
+                      <span className="text-xs font-medium text-[#CAC4D0]">Answer</span>
+                    </div>
                   </div>
                 </div>
               </div>

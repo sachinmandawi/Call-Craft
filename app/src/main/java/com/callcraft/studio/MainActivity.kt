@@ -3251,43 +3251,65 @@ fun FakeIncomingCallScreen(
                         )
                     }
 
-                    // Samsung Swipe-style Circles (Answer Left, Decline Right)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 24.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    // Samsung Swipe-style Circles (Answer Left, Decline Right) + Send Message Pill
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(
-                                modifier = Modifier
-                                    .size(64.dp)
-                                    .scale(pulseScale)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF22C55E))
-                                    .clickable(onClick = onAnswer),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Call, contentDescription = "Answer", tint = Color.White, modifier = Modifier.size(30.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .scale(pulseScale)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF22C55E))
+                                        .clickable(onClick = onAnswer),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Call, contentDescription = "Answer", tint = Color.White, modifier = Modifier.size(30.dp))
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text("Answer", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                             }
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text("Answer", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFEF4444))
+                                        .clickable(onClick = onDecline),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.CallEnd, contentDescription = "Decline", tint = Color.White, modifier = Modifier.size(30.dp))
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text("Decline", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                            }
                         }
 
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(
-                                modifier = Modifier
-                                    .size(64.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFFEF4444))
-                                    .clickable(onClick = onDecline),
-                                contentAlignment = Alignment.Center
+                        // Samsung Signature "Send message" Pull-up Pill
+                        Surface(
+                            shape = CircleShape,
+                            color = Color.White.copy(alpha = 0.12f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.15f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 18.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Icon(Icons.Default.CallEnd, contentDescription = "Decline", tint = Color.White, modifier = Modifier.size(30.dp))
+                                Icon(Icons.Default.KeyboardArrowUp, contentDescription = null, tint = Color.White.copy(alpha = 0.85f), modifier = Modifier.size(16.dp))
+                                Text("Send message", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = Color.White.copy(alpha = 0.9f))
                             }
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text("Decline", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                         }
                     }
                 }
@@ -3347,42 +3369,63 @@ fun FakeIncomingCallScreen(
                         )
                     }
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 24.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(
-                                modifier = Modifier
-                                    .size(64.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFFEF4444))
-                                    .clickable(onClick = onDecline),
-                                contentAlignment = Alignment.Center
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFF27272A),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF3F3F46))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Icon(Icons.Default.CallEnd, contentDescription = "Decline", tint = Color.White, modifier = Modifier.size(30.dp))
+                                Icon(Icons.Default.Chat, contentDescription = null, tint = Color(0xFFA1A1AA), modifier = Modifier.size(14.dp))
+                                Text("Quick response", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = Color(0xFFA1A1AA))
                             }
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text("Decline", fontSize = 11.sp, color = Color(0xFFA1A1AA))
                         }
 
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(
-                                modifier = Modifier
-                                    .size(64.dp)
-                                    .scale(pulseScale)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF10B981))
-                                    .clickable(onClick = onAnswer),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Call, contentDescription = "Answer", tint = Color.White, modifier = Modifier.size(30.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFEF4444))
+                                        .clickable(onClick = onDecline),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.CallEnd, contentDescription = "Decline", tint = Color.White, modifier = Modifier.size(30.dp))
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text("Decline", fontSize = 11.sp, color = Color(0xFFA1A1AA))
                             }
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text("Answer", fontSize = 11.sp, color = Color(0xFFA1A1AA))
+
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .scale(pulseScale)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF10B981))
+                                        .clickable(onClick = onAnswer),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Call, contentDescription = "Answer", tint = Color.White, modifier = Modifier.size(30.dp))
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text("Answer", fontSize = 11.sp, color = Color(0xFFA1A1AA))
+                            }
                         }
                     }
                 }
@@ -3435,43 +3478,86 @@ fun FakeIncomingCallScreen(
                         )
                     }
 
-                    // iOS Unlocked Incoming Buttons (Decline left, Accept right)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 24.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(22.dp)
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(
-                                modifier = Modifier
-                                    .size(68.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFFFF3B30))
-                                    .clickable(onClick = onDecline),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.CallEnd, contentDescription = "Decline", tint = Color.White, modifier = Modifier.size(32.dp))
+                        // iOS Signature Auxiliary Controls: Remind Me & Message
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 28.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.White.copy(alpha = 0.15f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Schedule, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text("remind me", fontSize = 11.sp, color = Color.White)
                             }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("decline", fontSize = 12.sp, color = Color.White)
+
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .clip(CircleShape)
+                                        .background(Color.White.copy(alpha = 0.15f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Chat, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text("message", fontSize = 11.sp, color = Color.White)
+                            }
                         }
 
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(
-                                modifier = Modifier
-                                    .size(68.dp)
-                                    .scale(pulseScale)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF34C759))
-                                    .clickable(onClick = onAnswer),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Call, contentDescription = "Accept", tint = Color.White, modifier = Modifier.size(32.dp))
+                        // iOS Primary Action Controls: Decline (red) & Accept (green)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 22.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(68.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFFF3B30))
+                                        .clickable(onClick = onDecline),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.CallEnd, contentDescription = "Decline", tint = Color.White, modifier = Modifier.size(32.dp))
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("decline", fontSize = 12.sp, color = Color.White)
                             }
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("accept", fontSize = 12.sp, color = Color.White)
+
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(68.dp)
+                                        .scale(pulseScale)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF34C759))
+                                        .clickable(onClick = onAnswer),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Call, contentDescription = "Accept", tint = Color.White, modifier = Modifier.size(32.dp))
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("accept", fontSize = 12.sp, color = Color.White)
+                            }
                         }
                     }
                 }
@@ -3552,42 +3638,63 @@ fun FakeIncomingCallScreen(
                         }
                     }
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 20.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(
-                                modifier = Modifier
-                                    .size(64.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFFBA1A1A))
-                                    .clickable(onClick = onDecline),
-                                contentAlignment = Alignment.Center
+                        Surface(
+                            shape = CircleShape,
+                            color = Color(0xFF2B2930),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Icon(Icons.Default.CallEnd, contentDescription = "Decline", tint = Color.White, modifier = Modifier.size(30.dp))
+                                Icon(Icons.Default.Chat, contentDescription = null, tint = Color(0xFFD0BCFF), modifier = Modifier.size(14.dp))
+                                Text("Reply", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFD0BCFF))
                             }
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text("Decline", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
                         }
 
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Box(
-                                modifier = Modifier
-                                    .size(64.dp)
-                                    .scale(pulseScale)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF10B981))
-                                    .clickable(onClick = onAnswer),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Call, contentDescription = "Answer", tint = Color.White, modifier = Modifier.size(30.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 20.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFFBA1A1A))
+                                        .clickable(onClick = onDecline),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.CallEnd, contentDescription = "Decline", tint = Color.White, modifier = Modifier.size(30.dp))
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text("Decline", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
                             }
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text("Answer", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
+
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .scale(pulseScale)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF10B981))
+                                        .clickable(onClick = onAnswer),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Call, contentDescription = "Answer", tint = Color.White, modifier = Modifier.size(30.dp))
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text("Answer", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
+                            }
                         }
                     }
                 }
