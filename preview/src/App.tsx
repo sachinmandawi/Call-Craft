@@ -17,7 +17,15 @@ import {
   Check,
   Clock,
   CheckCheck,
-  Edit3
+  Edit3,
+  Zap,
+  Settings as SettingsIcon,
+  Phone,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
+  History
 } from 'lucide-react';
 
 export type CallType = 1 | 2 | 3 | 5; // 1: Incoming, 2: Outgoing, 3: Missed, 5: Rejected
@@ -214,6 +222,56 @@ function formatFullDateTime(date: Date): string {
   return `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} • ${timeStr}`;
 }
 
+const FAKE_CALL_PRESETS = [
+  { name: 'Boss 🏢', number: '+91 98123 45678' },
+  { name: 'Mom ❤️', number: '+91 98980 12345' },
+  { name: 'Doctor 🩺', number: '+91 98234 56789' },
+  { name: 'Pizza 🍕', number: '+91 98765 00000' },
+  { name: 'Police 🚓', number: '112' },
+];
+
+const DTMF_FREQS: Record<string, [number, number]> = {
+  '1': [697, 1209],
+  '2': [697, 1336],
+  '3': [697, 1477],
+  '4': [770, 1209],
+  '5': [770, 1336],
+  '6': [770, 1477],
+  '7': [852, 1209],
+  '8': [852, 1336],
+  '9': [852, 1477],
+  '*': [941, 1209],
+  '0': [941, 1336],
+  '#': [941, 1477],
+};
+
+function playTone(freq1: number, freq2: number, duration: number) {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc1.frequency.value = freq1;
+    osc2.frequency.value = freq2;
+
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(ctx.destination);
+
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    osc1.start();
+    osc2.start();
+
+    osc1.stop(ctx.currentTime + duration);
+    osc2.stop(ctx.currentTime + duration);
+  } catch (e) {
+    // Autoplay policy or unsupported audio context
+  }
+}
+
 function AppLogo({ size = 32 }: { size?: number }) {
   return (
     <img
@@ -255,6 +313,28 @@ export default function App() {
   // Add / Edit Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<CallLogItem | null>(null);
+
+  // 3-Dot Dropdown Menu State
+  const [isTopMenuOpen, setIsTopMenuOpen] = useState(false);
+
+  // Fake Call Simulator States
+  const [isFakeCallModalOpen, setIsFakeCallModalOpen] = useState(false);
+  const [fakeCallName, setFakeCallName] = useState('Boss 🏢');
+  const [fakeCallNumber, setFakeCallNumber] = useState('+91 98765 43210');
+  const [fakeCallSimSlot, setFakeCallSimSlot] = useState<1 | 2>(defaultSlot);
+  const [fakeCallDelaySec, setFakeCallDelaySec] = useState<number>(3);
+  const [fakeCallMinsInput, setFakeCallMinsInput] = useState('0');
+  const [fakeCallSecsInput, setFakeCallSecsInput] = useState('3');
+  const [fakeCallSound, setFakeCallSound] = useState(true);
+  const [fakeCallVibrate, setFakeCallVibrate] = useState(true);
+  const [fakeCallSaveToLog, setFakeCallSaveToLog] = useState(true);
+  const [fakeCallCountdown, setFakeCallCountdown] = useState<number | null>(null);
+  const [fakeCallState, setFakeCallState] = useState<'idle' | 'incoming' | 'active'>('idle');
+  const [fakeCallElapsedSec, setFakeCallElapsedSec] = useState(0);
+  const [isKeypadOpen, setIsKeypadOpen] = useState(false);
+  const [dialedDigits, setDialedDigits] = useState('');
+  const [isMuted, setIsMuted] = useState(false);
+  const [isSpeakerOn, setIsSpeakerOn] = useState(false);
 
   // Form State
   const [formName, setFormName] = useState('');
@@ -311,6 +391,55 @@ export default function App() {
       setViewingGroup(updated || null);
     }
   }, [groupedLogs]);
+
+  // Fake Call Countdown Timer
+  useEffect(() => {
+    let timer: any = null;
+    if (fakeCallCountdown !== null && fakeCallCountdown > 0) {
+      timer = setTimeout(() => {
+        setFakeCallCountdown((prev) => (prev !== null && prev > 1 ? prev - 1 : 0));
+      }, 1000);
+    } else if (fakeCallCountdown === 0) {
+      setFakeCallCountdown(null);
+      setFakeCallState('incoming');
+    }
+    return () => clearTimeout(timer);
+  }, [fakeCallCountdown]);
+
+  // Fake Call Active In-Call Duration Timer
+  useEffect(() => {
+    let interval: any = null;
+    if (fakeCallState === 'active') {
+      interval = setInterval(() => {
+        setFakeCallElapsedSec((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setFakeCallElapsedSec(0);
+      setIsKeypadOpen(false);
+      setDialedDigits('');
+    }
+    return () => clearInterval(interval);
+  }, [fakeCallState]);
+
+  // Fake Call Ringtone Audio Loop
+  useEffect(() => {
+    if (fakeCallState !== 'incoming' || !fakeCallSound) return;
+    let isCancelled = false;
+    let interval: any = null;
+
+    const ring = () => {
+      if (isCancelled) return;
+      playTone(440, 480, 1.2);
+    };
+
+    ring();
+    interval = setInterval(ring, 3000);
+
+    return () => {
+      isCancelled = true;
+      clearInterval(interval);
+    };
+  }, [fakeCallState, fakeCallSound]);
 
   const allFilteredGroups = useMemo(() => {
     if (!searchQuery.trim()) return groupedLogs;
@@ -586,13 +715,80 @@ export default function App() {
                       <span className="text-[#6750A4]">Craft</span>
                     </h1>
 
-                    <button
-                      onClick={() => setCurrentScreen('settings')}
-                      className="p-2 -mr-2 text-[#49454F] hover:text-[#1D1B20] hover:bg-black/5 rounded-full transition"
-                    >
-                      <MoreVertical className="w-5 h-5" />
-                    </button>
+                    <div className="relative">
+                      <button
+                        onClick={() => setIsTopMenuOpen(!isTopMenuOpen)}
+                        className="p-2 -mr-2 text-[#49454F] hover:text-[#1D1B20] hover:bg-black/5 rounded-full transition"
+                      >
+                        <MoreVertical className="w-5 h-5" />
+                      </button>
+
+                      {isTopMenuOpen && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-40"
+                            onClick={() => setIsTopMenuOpen(false)}
+                          />
+                          <div className="absolute right-0 top-full mt-1 w-56 bg-[#FEF7FF] rounded-2xl shadow-xl border border-[#E7E0EC] py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                            <button
+                              onClick={() => {
+                                setIsTopMenuOpen(false);
+                                setIsFakeCallModalOpen(true);
+                              }}
+                              className="w-full px-4 py-2.5 text-left text-xs font-bold text-[#1D1B20] hover:bg-[#F3EDF7] flex items-center gap-2.5 transition"
+                            >
+                              <div className="w-7 h-7 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center">
+                                <Zap className="w-4 h-4 fill-amber-500" />
+                              </div>
+                              <div>
+                                <div>Fake Call Simulator</div>
+                                <div className="text-[10px] text-[#79747E] font-normal">Escape awkward situations</div>
+                              </div>
+                            </button>
+
+                            <div className="h-px bg-[#E7E0EC] my-1" />
+
+                            <button
+                              onClick={() => {
+                                setIsTopMenuOpen(false);
+                                setCurrentScreen('settings');
+                              }}
+                              className="w-full px-4 py-2.5 text-left text-xs font-bold text-[#1D1B20] hover:bg-[#F3EDF7] flex items-center gap-2.5 transition"
+                            >
+                              <div className="w-7 h-7 rounded-xl bg-[#6750A4]/15 text-[#6750A4] flex items-center justify-center">
+                                <SettingsIcon className="w-4 h-4" />
+                              </div>
+                              <div>
+                                <div>Settings</div>
+                                <div className="text-[10px] text-[#79747E] font-normal">Dialer Role permission</div>
+                              </div>
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
+                </div>
+              )}
+
+              {/* Fake Call Active Countdown Banner */}
+              {fakeCallCountdown !== null && (
+                <div className="mx-5 mb-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-2xl p-3 shadow-md flex items-center justify-between animate-pulse">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                      <Zap className="w-4 h-4 text-white fill-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-black truncate">Fake Call in {fakeCallCountdown}s</div>
+                      <div className="text-[10px] text-amber-100 font-medium truncate">{fakeCallName} ({fakeCallNumber})</div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setFakeCallCountdown(null)}
+                    className="px-2.5 py-1 rounded-lg bg-black/20 hover:bg-black/30 text-[11px] font-bold shrink-0 transition"
+                  >
+                    Cancel
+                  </button>
                 </div>
               )}
 
@@ -1425,6 +1621,495 @@ export default function App() {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        )}
+        {/* Fake Call Simulator Setup Modal */}
+        {isFakeCallModalOpen && (
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-end justify-center z-50 animate-in fade-in duration-150">
+            <div className="bg-[#FEF7FF] text-[#1D1B20] w-full rounded-t-[36px] p-6 shadow-2xl flex flex-col space-y-4 max-h-[92%] overflow-y-auto border-t border-[#E7E0EC]">
+              <div className="w-12 h-1 bg-[#79747E]/40 rounded-full mx-auto shrink-0 mb-1" />
+
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-2xl bg-amber-500/15 text-amber-600 flex items-center justify-center">
+                    <Zap className="w-5 h-5 fill-amber-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-[#1D1B20] leading-tight">Fake Call Simulator</h3>
+                    <p className="text-[11px] text-[#6750A4] font-semibold">Escape awkward situations safely</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsFakeCallModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-[#ECE6F0] flex items-center justify-center text-[#49454F] hover:bg-[#E8DEF8] transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Caller Quick Presets */}
+              <div>
+                <label className="block text-xs font-bold text-[#49454F] mb-1.5">
+                  Quick Caller Presets
+                </label>
+                <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                  {FAKE_CALL_PRESETS.map((preset) => (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      onClick={() => {
+                        setFakeCallName(preset.name);
+                        setFakeCallNumber(preset.number);
+                      }}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold shrink-0 transition flex items-center gap-1 ${
+                        fakeCallName === preset.name
+                          ? 'bg-amber-500 text-white shadow-xs'
+                          : 'bg-[#ECE6F0] text-[#49454F] hover:bg-[#E8DEF8] hover:text-[#1D1B20]'
+                      }`}
+                    >
+                      <span>{preset.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Caller Name */}
+              <div>
+                <label className="block text-xs font-bold text-[#49454F] mb-1">
+                  Caller Name
+                </label>
+                <input
+                  type="text"
+                  value={fakeCallName}
+                  onChange={(e) => setFakeCallName(e.target.value)}
+                  placeholder="e.g. Boss, Mom, Doctor"
+                  className="w-full bg-[#F3EDF7] border border-[#79747E]/30 rounded-2xl px-3.5 py-2 text-sm font-semibold focus:outline-none focus:border-[#6750A4] focus:bg-[#FEF7FF] transition"
+                />
+              </div>
+
+              {/* Custom Phone Number with Contact Picker button */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-[#49454F]">
+                    Phone Number
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsContactPickerOpen(true)}
+                    className="flex items-center gap-1.5 text-xs font-bold text-[#6750A4] bg-[#E8DEF8] px-2.5 py-0.5 rounded-full hover:bg-[#D0BCFF] transition"
+                  >
+                    <Smartphone className="w-3.5 h-3.5" />
+                    <span>Pick Contact</span>
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={fakeCallNumber}
+                  onChange={(e) => setFakeCallNumber(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  className="w-full bg-[#F3EDF7] border border-[#79747E]/30 rounded-2xl px-3.5 py-2 text-sm font-mono font-semibold focus:outline-none focus:border-[#6750A4] focus:bg-[#FEF7FF] transition"
+                />
+              </div>
+
+              {/* SIM Slot Selector */}
+              <div>
+                <label className="block text-xs font-bold text-[#49454F] mb-1">
+                  Incoming SIM Card
+                </label>
+                <div className="grid grid-cols-2 gap-2 bg-[#ECE6F0] p-1 rounded-2xl">
+                  <button
+                    type="button"
+                    disabled={!hasSim1}
+                    onClick={() => setFakeCallSimSlot(1)}
+                    className={`py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                      !hasSim1
+                        ? 'opacity-40 cursor-not-allowed text-[#79747E]'
+                        : fakeCallSimSlot === 1
+                        ? 'bg-[#6750A4] text-white shadow-xs'
+                        : 'text-[#49454F] hover:text-[#1D1B20]'
+                    }`}
+                  >
+                    <Smartphone className="w-3.5 h-3.5" />
+                    <span>{hasSim1 ? 'SIM 1 (Jio 5G)' : 'SIM 1 (No SIM)'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!hasSim2}
+                    onClick={() => setFakeCallSimSlot(2)}
+                    className={`py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                      !hasSim2
+                        ? 'opacity-40 cursor-not-allowed text-[#79747E]'
+                        : fakeCallSimSlot === 2
+                        ? 'bg-[#0284C7] text-white shadow-xs'
+                        : 'text-[#49454F] hover:text-[#1D1B20]'
+                    }`}
+                  >
+                    <Smartphone className="w-3.5 h-3.5" />
+                    <span>{hasSim2 ? 'SIM 2 (Airtel)' : 'SIM 2 (No SIM)'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Ring Delay (Presets + Custom Inputs) */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-[#49454F]">
+                    Ring Delay Timer
+                  </label>
+                  <span className="text-[11px] font-bold text-amber-600">
+                    {fakeCallDelaySec <= 3
+                      ? 'Ring in 3 seconds'
+                      : `Ring in ${Math.floor(fakeCallDelaySec / 60) > 0 ? `${Math.floor(fakeCallDelaySec / 60)}m ` : ''}${fakeCallDelaySec % 60}s`}
+                  </span>
+                </div>
+
+                {/* Quick Presets */}
+                <div className="flex gap-1.5 overflow-x-auto pb-2 no-scrollbar">
+                  {[
+                    { label: 'Now (3s)', sec: 3 },
+                    { label: '10s', sec: 10 },
+                    { label: '30s', sec: 30 },
+                    { label: '1m', sec: 60 },
+                    { label: '5m', sec: 300 },
+                  ].map((preset) => (
+                    <button
+                      key={preset.sec}
+                      type="button"
+                      onClick={() => {
+                        setFakeCallDelaySec(preset.sec);
+                        setFakeCallMinsInput(Math.floor(preset.sec / 60).toString());
+                        setFakeCallSecsInput((preset.sec % 60).toString());
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition ${
+                        fakeCallDelaySec === preset.sec
+                          ? 'bg-[#6750A4] text-white shadow-xs'
+                          : 'bg-[#ECE6F0] text-[#49454F] hover:bg-[#E8DEF8]'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Custom Min / Sec Inputs */}
+                <div className="grid grid-cols-2 gap-2 bg-[#F3EDF7] p-2.5 rounded-2xl border border-[#E7E0EC]">
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#79747E] mb-1">Minutes</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="60"
+                      value={fakeCallMinsInput}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFakeCallMinsInput(val);
+                        const m = parseInt(val || '0', 10) || 0;
+                        const s = parseInt(fakeCallSecsInput || '0', 10) || 0;
+                        setFakeCallDelaySec(Math.max(1, m * 60 + s));
+                      }}
+                      className="w-full bg-[#FEF7FF] border border-[#79747E]/30 rounded-xl px-3 py-1.5 text-xs font-mono font-bold text-[#1D1B20] focus:outline-none focus:border-[#6750A4]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-[#79747E] mb-1">Seconds</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={fakeCallSecsInput}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFakeCallSecsInput(val);
+                        const m = parseInt(fakeCallMinsInput || '0', 10) || 0;
+                        const s = parseInt(val || '0', 10) || 0;
+                        setFakeCallDelaySec(Math.max(1, m * 60 + s));
+                      }}
+                      className="w-full bg-[#FEF7FF] border border-[#79747E]/30 rounded-xl px-3 py-1.5 text-xs font-mono font-bold text-[#1D1B20] focus:outline-none focus:border-[#6750A4]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Simulator Options Switches */}
+              <div className="space-y-2 bg-[#F3EDF7] p-3 rounded-2xl border border-[#E7E0EC]">
+                <label className="flex items-center justify-between cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <Volume2 className="w-4 h-4 text-[#6750A4]" />
+                    <span className="text-xs font-bold text-[#1D1B20]">Play Ringtone Sound</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={fakeCallSound}
+                    onChange={(e) => setFakeCallSound(e.target.checked)}
+                    className="w-4 h-4 accent-[#6750A4] rounded cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-amber-600" />
+                    <span className="text-xs font-bold text-[#1D1B20]">Simulate Vibration</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={fakeCallVibrate}
+                    onChange={(e) => setFakeCallVibrate(e.target.checked)}
+                    className="w-4 h-4 accent-[#6750A4] rounded cursor-pointer"
+                  />
+                </label>
+
+                <label className="flex items-center justify-between cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <History className="w-4 h-4 text-emerald-600" />
+                    <span className="text-xs font-bold text-[#1D1B20]">Auto-Save to Call History on End</span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={fakeCallSaveToLog}
+                    onChange={(e) => setFakeCallSaveToLog(e.target.checked)}
+                    className="w-4 h-4 accent-[#6750A4] rounded cursor-pointer"
+                  />
+                </label>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsFakeCallModalOpen(false)}
+                  className="flex-1 py-3 text-xs font-bold text-[#49454F] bg-[#ECE6F0] hover:bg-[#E8DEF8] rounded-full transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsFakeCallModalOpen(false);
+                    setFakeCallCountdown(fakeCallDelaySec);
+                  }}
+                  className="flex-[2] py-3 text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-full shadow-md flex items-center justify-center gap-2 transition"
+                >
+                  <Zap className="w-4 h-4 fill-white" />
+                  <span>Schedule Fake Call</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Fake Incoming Call Fullscreen Screen */}
+        {fakeCallState === 'incoming' && (
+          <div className="absolute inset-0 bg-gradient-to-b from-[#1C1B1F] via-[#2B2930] to-[#121214] text-white z-[60] flex flex-col justify-between p-8 animate-in fade-in zoom-in-95 duration-200 select-none">
+            {/* Top Status & SIM */}
+            <div className="flex flex-col items-center pt-8 space-y-2">
+              <div className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-[11px] font-bold text-white/80 flex items-center gap-1.5 border border-white/10">
+                <Smartphone className="w-3.5 h-3.5 text-amber-400" />
+                <span>Incoming Call • SIM {fakeCallSimSlot}</span>
+              </div>
+
+              <div className="text-center pt-4">
+                <h2 className="text-3xl font-black tracking-tight text-white">{fakeCallName}</h2>
+                <p className="text-sm font-mono text-white/70 mt-1">{fakeCallNumber}</p>
+              </div>
+            </div>
+
+            {/* Center Avatar with Pulsing Rings */}
+            <div className="flex items-center justify-center py-6">
+              <div className="relative flex items-center justify-center">
+                <div className="absolute w-44 h-44 rounded-full bg-[#6750A4]/25 animate-ping duration-1000" />
+                <div className="absolute w-36 h-36 rounded-full bg-amber-500/20 animate-pulse" />
+                <div className="relative w-28 h-28 rounded-full bg-gradient-to-tr from-[#6750A4] to-amber-500 flex items-center justify-center text-4xl font-black text-white shadow-2xl border-2 border-white/30">
+                  {fakeCallName.slice(0, 1).toUpperCase()}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Actions: Decline and Answer */}
+            <div className="pb-8 space-y-4">
+              <div className="flex items-center justify-around px-4">
+                {/* Decline */}
+                <div className="flex flex-col items-center gap-2">
+                  <button
+                    onClick={() => setFakeCallState('idle')}
+                    className="w-16 h-16 rounded-full bg-[#F43F5E] hover:bg-rose-600 flex items-center justify-center text-white shadow-xl transform active:scale-90 transition"
+                  >
+                    <PhoneOff className="w-7 h-7" />
+                  </button>
+                  <span className="text-xs font-bold text-white/80">Decline</span>
+                </div>
+
+                {/* Answer */}
+                <div className="flex flex-col items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setFakeCallState('active');
+                      setFakeCallElapsedSec(0);
+                    }}
+                    className="w-16 h-16 rounded-full bg-[#10B981] hover:bg-emerald-600 flex items-center justify-center text-white shadow-xl transform active:scale-90 transition animate-bounce"
+                  >
+                    <Phone className="w-7 h-7 fill-white" />
+                  </button>
+                  <span className="text-xs font-bold text-white/80">Answer</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Fake Active In-Call Fullscreen Screen */}
+        {fakeCallState === 'active' && (
+          <div className="absolute inset-0 bg-gradient-to-b from-[#1C1B1F] via-[#24222A] to-[#121214] text-white z-[60] flex flex-col justify-between p-6 animate-in fade-in duration-150 select-none">
+            {/* Top Header */}
+            <div className="flex flex-col items-center pt-6 space-y-1">
+              <div className="px-2.5 py-0.5 rounded-full bg-white/10 text-[10px] font-bold text-white/70 flex items-center gap-1">
+                <Smartphone className="w-3 h-3 text-emerald-400" />
+                <span>SIM {fakeCallSimSlot}</span>
+              </div>
+              <h2 className="text-2xl font-black text-white">{fakeCallName}</h2>
+              <p className="text-xs font-mono text-white/60">{fakeCallNumber}</p>
+              <div className="text-sm font-black font-mono text-emerald-400 pt-1 tracking-wider">
+                {formatDuration(fakeCallElapsedSec)}
+              </div>
+              {dialedDigits && (
+                <div className="text-xs font-mono text-amber-400 bg-black/40 px-3 py-1 rounded-full mt-1">
+                  Dialed: {dialedDigits}
+                </div>
+              )}
+            </div>
+
+            {/* Center: DTMF Keypad or In-Call Grid */}
+            {isKeypadOpen ? (
+              <div className="bg-black/30 backdrop-blur-md rounded-3xl p-3 border border-white/10 my-auto">
+                <div className="grid grid-cols-3 gap-2.5 max-w-[260px] mx-auto">
+                  {[
+                    { d: '1', sub: '' },
+                    { d: '2', sub: 'ABC' },
+                    { d: '3', sub: 'DEF' },
+                    { d: '4', sub: 'GHI' },
+                    { d: '5', sub: 'JKL' },
+                    { d: '6', sub: 'MNO' },
+                    { d: '7', sub: 'PQRS' },
+                    { d: '8', sub: 'TUV' },
+                    { d: '9', sub: 'WXYZ' },
+                    { d: '*', sub: '' },
+                    { d: '0', sub: '+' },
+                    { d: '#', sub: '' },
+                  ].map((k) => (
+                    <button
+                      key={k.d}
+                      onClick={() => {
+                        if (DTMF_FREQS[k.d]) {
+                          playTone(DTMF_FREQS[k.d][0], DTMF_FREQS[k.d][1], 0.15);
+                        }
+                        setDialedDigits((prev) => prev + k.d);
+                      }}
+                      className="h-13 rounded-2xl bg-white/10 hover:bg-white/20 active:bg-[#6750A4] flex flex-col items-center justify-center transition"
+                    >
+                      <span className="text-lg font-black leading-none">{k.d}</span>
+                      {k.sub && <span className="text-[8px] font-bold text-white/50">{k.sub}</span>}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => setIsKeypadOpen(false)}
+                  className="mt-3 w-full py-1.5 text-xs font-bold text-white/70 hover:text-white bg-white/5 rounded-xl transition"
+                >
+                  Hide Keypad
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-4 px-4 my-auto">
+                {/* Mute */}
+                <button
+                  onClick={() => setIsMuted(!isMuted)}
+                  className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl transition ${
+                    isMuted ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/15'
+                  }`}
+                >
+                  {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+                  <span className="text-[11px] font-bold">{isMuted ? 'Muted' : 'Mute'}</span>
+                </button>
+
+                {/* Keypad */}
+                <button
+                  onClick={() => setIsKeypadOpen(true)}
+                  className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-white/10 text-white hover:bg-white/15 transition"
+                >
+                  <div className="w-6 h-6 grid grid-cols-3 gap-0.5 items-center justify-center">
+                    {Array.from({ length: 9 }).map((_, i) => (
+                      <span key={i} className="w-1 h-1 bg-white rounded-full mx-auto" />
+                    ))}
+                  </div>
+                  <span className="text-[11px] font-bold">Keypad</span>
+                </button>
+
+                {/* Speaker */}
+                <button
+                  onClick={() => setIsSpeakerOn(!isSpeakerOn)}
+                  className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl transition ${
+                    isSpeakerOn ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/15'
+                  }`}
+                >
+                  {isSpeakerOn ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
+                  <span className="text-[11px] font-bold">Speaker</span>
+                </button>
+
+                {/* Add Call (Mock) */}
+                <button
+                  onClick={() => alert('Feature disabled during simulated call')}
+                  className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-white/10 text-white/70 hover:bg-white/15 transition"
+                >
+                  <Plus className="w-6 h-6" />
+                  <span className="text-[11px] font-bold">Add Call</span>
+                </button>
+
+                {/* Hold (Mock) */}
+                <button
+                  onClick={() => alert('Call placed on hold')}
+                  className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-white/10 text-white/70 hover:bg-white/15 transition"
+                >
+                  <Clock className="w-6 h-6" />
+                  <span className="text-[11px] font-bold">Hold</span>
+                </button>
+
+                {/* Fake Note / Info */}
+                <button
+                  onClick={() => alert('Simulating active voice call on Android')}
+                  className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-white/10 text-white/70 hover:bg-white/15 transition"
+                >
+                  <Zap className="w-6 h-6 text-amber-400" />
+                  <span className="text-[11px] font-bold">Fake Call</span>
+                </button>
+              </div>
+            )}
+
+            {/* Bottom End Call */}
+            <div className="pb-6 flex justify-center">
+              <button
+                onClick={() => {
+                  if (fakeCallSaveToLog) {
+                    const newLog: CallLogItem = {
+                      id: Date.now().toString(),
+                      name: fakeCallName,
+                      number: fakeCallNumber,
+                      type: 1, // Incoming
+                      date: new Date(),
+                      durationSeconds: Math.max(1, fakeCallElapsedSec),
+                      simSlot: fakeCallSimSlot,
+                    };
+                    setLogs((prev) => [newLog, ...prev]);
+                  }
+                  setFakeCallState('idle');
+                  setIsKeypadOpen(false);
+                  setDialedDigits('');
+                }}
+                className="w-18 h-18 rounded-full bg-[#F43F5E] hover:bg-rose-600 flex items-center justify-center text-white shadow-2xl transform active:scale-95 transition"
+              >
+                <PhoneOff className="w-8 h-8" />
+              </button>
             </div>
           </div>
         )}

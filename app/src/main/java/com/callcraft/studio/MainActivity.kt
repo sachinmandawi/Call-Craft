@@ -13,6 +13,8 @@ import android.os.Bundle
 import android.provider.CallLog
 import android.provider.ContactsContract
 import android.provider.Settings
+import android.widget.Toast
+import com.callcraft.studio.service.FakeCallHelper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -56,10 +58,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -150,7 +154,46 @@ fun CallLogEditorApp(repository: CallLogRepository) {
     var prefilledDuration by remember { mutableStateOf<Long?>(null) }
     var prefilledSimSlot by remember { mutableStateOf(deviceSimState.defaultSlot) }
 
+    // Fake Call Simulator States
+    var showTopMenu by remember { mutableStateOf(false) }
+    var isFakeCallSetupOpen by remember { mutableStateOf(false) }
+    var fakeCallName by remember { mutableStateOf("Boss 🏢") }
+    var fakeCallNumber by remember { mutableStateOf("+91 98765 43210") }
+    var fakeCallSimSlot by remember { mutableStateOf(deviceSimState.defaultSlot) }
+    var fakeCallSound by remember { mutableStateOf(true) }
+    var fakeCallVibrate by remember { mutableStateOf(true) }
+    var fakeCallSaveToLog by remember { mutableStateOf(true) }
+    var fakeCallCountdownSec by remember { mutableStateOf(0) }
+    var isFakeIncomingActive by remember { mutableStateOf(false) }
+    var isFakeCallAnswered by remember { mutableStateOf(false) }
+    var fakeCallAnswerTime by remember { mutableStateOf(0L) }
+    val fakeCallHelper = remember { FakeCallHelper(context) }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            fakeCallHelper.cleanup()
+        }
+    }
+
+    LaunchedEffect(fakeCallCountdownSec) {
+        if (fakeCallCountdownSec > 0) {
+            kotlinx.coroutines.delay(1000)
+            if (fakeCallCountdownSec == 1) {
+                fakeCallCountdownSec = 0
+                isFakeIncomingActive = true
+                fakeCallHelper.startRinging(fakeCallSound, fakeCallVibrate)
+            } else {
+                fakeCallCountdownSec -= 1
+            }
+        }
+    }
+
     // Multi-tier Smooth Back Flow Handling
+    BackHandler(enabled = isFakeIncomingActive) {
+        fakeCallHelper.stopRinging()
+        isFakeIncomingActive = false
+    }
+
     BackHandler(enabled = isSelectionMode) {
         isSelectionMode = false
         selectedItemIds = emptySet()
@@ -264,15 +307,71 @@ fun CallLogEditorApp(repository: CallLogRepository) {
                                             color = LilacPrimary
                                         )
                                     }
-                                    IconButton(
-                                        onClick = { currentScreen = AppScreen.Settings },
-                                        modifier = Modifier.size(36.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.MoreVert,
-                                            contentDescription = "Settings",
-                                            tint = LilacTextMuted
-                                        )
+                                    Box {
+                                        IconButton(
+                                            onClick = { showTopMenu = true },
+                                            modifier = Modifier.size(36.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.MoreVert,
+                                                contentDescription = "Menu",
+                                                tint = LilacTextMuted
+                                            )
+                                        }
+
+                                        DropdownMenu(
+                                            expanded = showTopMenu,
+                                            onDismissRequest = { showTopMenu = false },
+                                            modifier = Modifier
+                                                .background(LilacBackground)
+                                                .clip(RoundedCornerShape(16.dp))
+                                                .border(1.dp, LilacBorder, RoundedCornerShape(16.dp))
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Text(
+                                                        "Fake Call Simulator",
+                                                        fontSize = 13.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = LilacText
+                                                    )
+                                                },
+                                                leadingIcon = {
+                                                    Icon(
+                                                        Icons.Default.Bolt,
+                                                        contentDescription = null,
+                                                        tint = LilacPrimary,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                },
+                                                onClick = {
+                                                    showTopMenu = false
+                                                    isFakeCallSetupOpen = true
+                                                }
+                                            )
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Text(
+                                                        "Settings",
+                                                        fontSize = 13.sp,
+                                                        fontWeight = FontWeight.Medium,
+                                                        color = LilacText
+                                                    )
+                                                },
+                                                leadingIcon = {
+                                                    Icon(
+                                                        Icons.Default.Settings,
+                                                        contentDescription = null,
+                                                        tint = LilacTextMuted,
+                                                        modifier = Modifier.size(18.dp)
+                                                    )
+                                                },
+                                                onClick = {
+                                                    showTopMenu = false
+                                                    currentScreen = AppScreen.Settings
+                                                }
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -805,6 +904,93 @@ fun CallLogEditorApp(repository: CallLogRepository) {
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirmDialog = false }) {
                     Text("Cancel", color = LilacPrimary, fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+
+    // Fake Call Setup Bottom Sheet
+    if (isFakeCallSetupOpen) {
+        FakeCallBottomSheet(
+            deviceSimState = deviceSimState,
+            initialName = fakeCallName,
+            initialNumber = fakeCallNumber,
+            initialSimSlot = fakeCallSimSlot,
+            initialSound = fakeCallSound,
+            initialVibrate = fakeCallVibrate,
+            initialSaveToLog = fakeCallSaveToLog,
+            onDismiss = { isFakeCallSetupOpen = false },
+            onSchedule = { name, number, simSlot, delaySeconds, sound, vibrate, saveToLog ->
+                fakeCallName = name
+                fakeCallNumber = number
+                fakeCallSimSlot = simSlot
+                fakeCallSound = sound
+                fakeCallVibrate = vibrate
+                fakeCallSaveToLog = saveToLog
+                isFakeCallSetupOpen = false
+
+                if (delaySeconds <= 0) {
+                    isFakeIncomingActive = true
+                    fakeCallHelper.startRinging(sound, vibrate)
+                } else {
+                    fakeCallCountdownSec = delaySeconds
+                    Toast.makeText(
+                        context,
+                        "Fake call scheduled in ${if (delaySeconds >= 60) "${delaySeconds / 60}m ${delaySeconds % 60}s" else "${delaySeconds}s"}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        )
+    }
+
+    // Fake Incoming Call Screen (Pixel M3 Full-Screen)
+    if (isFakeIncomingActive) {
+        FakeIncomingCallScreen(
+            callerName = fakeCallName,
+            callerNumber = fakeCallNumber,
+            simSlot = fakeCallSimSlot,
+            onAnswer = {
+                fakeCallHelper.stopRinging()
+                isFakeIncomingActive = false
+                isFakeCallAnswered = true
+                fakeCallAnswerTime = System.currentTimeMillis()
+            },
+            onDecline = {
+                fakeCallHelper.stopRinging()
+                isFakeIncomingActive = false
+            }
+        )
+    }
+
+    // Fake Active In-Call Screen (Live Timer, Keypad, Proximity Screen-Blackout)
+    if (isFakeCallAnswered) {
+        FakeActiveCallScreen(
+            callerName = fakeCallName,
+            callerNumber = fakeCallNumber,
+            simSlot = fakeCallSimSlot,
+            fakeCallHelper = fakeCallHelper,
+            onEndCall = { durationSec ->
+                fakeCallHelper.cleanup()
+                isFakeCallAnswered = false
+                if (fakeCallSaveToLog) {
+                    scope.launch {
+                        repository.insertCallLog(
+                            name = fakeCallName,
+                            number = fakeCallNumber,
+                            type = CallLog.Calls.INCOMING_TYPE,
+                            dateMillis = fakeCallAnswerTime,
+                            durationSeconds = durationSec,
+                            simSlot = fakeCallSimSlot
+                        )
+                        Toast.makeText(
+                            context,
+                            "Fake call saved to Call Log (${formatDuration(durationSec)})",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        kotlinx.coroutines.delay(150)
+                        refreshLogs()
+                    }
                 }
             }
         )
@@ -2262,4 +2448,828 @@ fun formatFullDateTime(dateMillis: Long): String {
     if (isToday) return "Today • $timeStr"
     if (isYesterday) return "Yesterday • $timeStr"
     return SimpleDateFormat("dd MMM • hh:mm a", Locale.getDefault()).format(date)
+}
+
+// ─────────────────────────────────────────────────────────────
+// FAKE CALL SIMULATOR COMPOSABLES
+// ─────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FakeCallBottomSheet(
+    deviceSimState: DeviceSimState,
+    initialName: String,
+    initialNumber: String,
+    initialSimSlot: Int,
+    initialSound: Boolean,
+    initialVibrate: Boolean,
+    initialSaveToLog: Boolean,
+    onDismiss: () -> Unit,
+    onSchedule: (name: String, number: String, simSlot: Int, delaySeconds: Int, sound: Boolean, vibrate: Boolean, saveToLog: Boolean) -> Unit
+) {
+    val context = LocalContext.current
+    val scrollState = rememberScrollState()
+
+    var name by remember { mutableStateOf(initialName) }
+    var number by remember { mutableStateOf(initialNumber) }
+    var simSlot by remember { mutableStateOf(if (initialSimSlot == 2 && !deviceSimState.hasSim2 && deviceSimState.hasSim1) 1 else initialSimSlot) }
+    var soundEnabled by remember { mutableStateOf(initialSound) }
+    var vibrateEnabled by remember { mutableStateOf(initialVibrate) }
+    var saveToLog by remember { mutableStateOf(initialSaveToLog) }
+
+    // Timing (Presets + Custom Delay)
+    val delayPresets = remember {
+        listOf(
+            3 to "Now (3s)",
+            10 to "10s",
+            30 to "30s",
+            60 to "1m",
+            300 to "5m"
+        )
+    }
+    var delayMinsText by remember { mutableStateOf("0") }
+    var delaySecsText by remember { mutableStateOf("3") }
+    var selectedPresetSec by remember { mutableStateOf<Int?>(3) }
+
+    val namePresets = listOf("Boss 🏢", "Mom ❤️", "Doctor 🩺", "Pizza 🍕", "Police 🚓")
+
+    // Contact Picker Launcher
+    val contactPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val contactUri = result.data?.data ?: return@rememberLauncherForActivityResult
+            try {
+                context.contentResolver.query(
+                    contactUri,
+                    arrayOf(ContactsContract.CommonDataKinds.Phone.NUMBER, ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME),
+                    null, null, null
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val numCol = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                        val nameCol = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                        if (numCol != -1) number = cursor.getString(numCol) ?: number
+                        if (nameCol != -1) name = cursor.getString(nameCol) ?: name
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = LilacBackground,
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+                .padding(top = 10.dp, bottom = 36.dp)
+                .verticalScroll(scrollState),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            // Header Row (Unclipped Close Box)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(LilacPrimaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Bolt, contentDescription = null, tint = LilacPrimary, modifier = Modifier.size(20.dp))
+                    }
+                    Text(
+                        "Fake Call Simulator",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Black,
+                        color = LilacText
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(LilacSurfaceVariant)
+                        .clickable(onClick = onDismiss),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = LilacTextMuted, modifier = Modifier.size(16.dp))
+                }
+            }
+
+            // Quick Name Presets
+            Column {
+                Text("QUICK CALLER PRESET", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF79747E), letterSpacing = 0.5.sp)
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    namePresets.forEach { preset ->
+                        val isSelected = name == preset
+                        Surface(
+                            onClick = { name = preset },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) LilacPrimary else LilacSurfaceVariant,
+                            border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, LilacBorder)
+                        ) {
+                            Text(
+                                text = preset,
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) Color.White else LilacText,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Caller Name Field
+            Column {
+                Text("Caller Name", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = LilacTextMuted)
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = LilacSurface,
+                        unfocusedContainerColor = LilacSurface,
+                        focusedBorderColor = LilacPrimary,
+                        unfocusedBorderColor = LilacBorder
+                    )
+                )
+            }
+
+            // Caller Phone Number + Pick Contact
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Phone Number", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = LilacTextMuted)
+                    Surface(
+                        onClick = {
+                            val pickIntent = Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI)
+                            contactPickerLauncher.launch(pickIntent)
+                        },
+                        shape = RoundedCornerShape(8.dp),
+                        color = LilacPrimaryContainer
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Icon(Icons.Default.Contacts, contentDescription = null, tint = LilacPrimary, modifier = Modifier.size(12.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Pick Contact", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = LilacPrimary)
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                OutlinedTextField(
+                    value = number,
+                    onValueChange = { number = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = LilacSurface,
+                        unfocusedContainerColor = LilacSurface,
+                        focusedBorderColor = LilacPrimary,
+                        unfocusedBorderColor = LilacBorder
+                    )
+                )
+            }
+
+            // SIM Slot Selection
+            Column {
+                Text("SIM Card", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = LilacTextMuted)
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(LilacSurfaceVariant)
+                        .padding(3.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    listOf(
+                        Pair(1, deviceSimState.hasSim1),
+                        Pair(2, deviceSimState.hasSim2)
+                    ).forEach { (slot, isInserted) ->
+                        val isSlotSelected = simSlot == slot && isInserted
+                        val displayLabel = if (isInserted) "SIM $slot" else "SIM $slot (No SIM)"
+
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(11.dp))
+                                .alpha(if (isInserted) 1f else 0.45f)
+                                .background(if (isSlotSelected) (if (slot == 1) LilacPrimary else Color(0xFF0284C7)) else Color.Transparent)
+                                .clickable(enabled = isInserted) { simSlot = slot }
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = displayLabel,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isSlotSelected) Color.White else LilacText
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Delay Selector: Quick Presets + Custom Inputs
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                val totalCalculatedSec = ((delayMinsText.toIntOrNull() ?: 0) * 60) + (delaySecsText.toIntOrNull() ?: 0)
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("TRIGGER DELAY", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF79747E), letterSpacing = 0.5.sp)
+                    Text(
+                        text = "Ringing in ${if (totalCalculatedSec >= 60) "${totalCalculatedSec / 60}m ${totalCalculatedSec % 60}s" else "${totalCalculatedSec}s"}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = LilacPrimary
+                    )
+                }
+
+                // Presets Row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    delayPresets.forEach { (sec, label) ->
+                        val isSelected = selectedPresetSec == sec
+                        Surface(
+                            onClick = {
+                                selectedPresetSec = sec
+                                delayMinsText = (sec / 60).toString()
+                                delaySecsText = (sec % 60).toString()
+                            },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) LilacPrimaryContainer else LilacSurfaceVariant,
+                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, LilacPrimary) else null
+                        ) {
+                            Text(
+                                text = label,
+                                fontSize = 12.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) LilacPrimary else LilacText,
+                                modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Custom Delay Numeric Inputs
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = delayMinsText,
+                        onValueChange = { newText ->
+                            val clean = newText.filter { it.isDigit() }
+                            delayMinsText = clean
+                            val m = clean.toIntOrNull() ?: 0
+                            val s = delaySecsText.toIntOrNull() ?: 0
+                            val total = (m * 60) + s
+                            selectedPresetSec = delayPresets.find { it.first == total }?.first
+                        },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        shape = RoundedCornerShape(12.dp),
+                        trailingIcon = {
+                            Text("min", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = LilacTextMuted, modifier = Modifier.padding(end = 8.dp))
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = LilacSurface,
+                            unfocusedContainerColor = LilacSurface,
+                            focusedBorderColor = LilacPrimary,
+                            unfocusedBorderColor = LilacBorder
+                        )
+                    )
+
+                    OutlinedTextField(
+                        value = delaySecsText,
+                        onValueChange = { newText ->
+                            val clean = newText.filter { it.isDigit() }
+                            val sVal = clean.toIntOrNull() ?: 0
+                            delaySecsText = if (sVal > 59) "59" else clean
+                            val m = delayMinsText.toIntOrNull() ?: 0
+                            val s = delaySecsText.toIntOrNull() ?: 0
+                            val total = (m * 60) + s
+                            selectedPresetSec = delayPresets.find { it.first == total }?.first
+                        },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        shape = RoundedCornerShape(12.dp),
+                        trailingIcon = {
+                            Text("sec", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = LilacTextMuted, modifier = Modifier.padding(end = 8.dp))
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = LilacSurface,
+                            unfocusedContainerColor = LilacSurface,
+                            focusedBorderColor = LilacPrimary,
+                            unfocusedBorderColor = LilacBorder
+                        )
+                    )
+                }
+            }
+
+            // Toggles
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                color = LilacSurface,
+                border = androidx.compose.foundation.BorderStroke(1.dp, LilacBorder)
+            ) {
+                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.VolumeUp, contentDescription = null, tint = LilacPrimary, modifier = Modifier.size(18.dp))
+                            Text("Ringtone Sound", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = LilacText)
+                        }
+                        Switch(
+                            checked = soundEnabled,
+                            onCheckedChange = { soundEnabled = it },
+                            colors = SwitchDefaults.colors(checkedTrackColor = LilacPrimary)
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.Vibration, contentDescription = null, tint = LilacPrimary, modifier = Modifier.size(18.dp))
+                            Text("Vibration Pattern", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = LilacText)
+                        }
+                        Switch(
+                            checked = vibrateEnabled,
+                            onCheckedChange = { vibrateEnabled = it },
+                            colors = SwitchDefaults.colors(checkedTrackColor = LilacPrimary)
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(Icons.Default.History, contentDescription = null, tint = LilacPrimary, modifier = Modifier.size(18.dp))
+                            Column {
+                                Text("Auto-Save to Call History", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = LilacText)
+                                Text("Records in real Android Call Log", fontSize = 10.sp, color = LilacTextMuted)
+                            }
+                        }
+                        Switch(
+                            checked = saveToLog,
+                            onCheckedChange = { saveToLog = it },
+                            colors = SwitchDefaults.colors(checkedTrackColor = LilacPrimary)
+                        )
+                    }
+                }
+            }
+
+            // Schedule Button
+            val totalSec = ((delayMinsText.toIntOrNull() ?: 0) * 60) + (delaySecsText.toIntOrNull() ?: 0)
+            Button(
+                onClick = {
+                    onSchedule(
+                        name.ifBlank { "Unknown" },
+                        number.ifBlank { "+91 98765 43210" },
+                        simSlot,
+                        totalSec,
+                        soundEnabled,
+                        vibrateEnabled,
+                        saveToLog
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = LilacPrimary)
+            ) {
+                Icon(Icons.Default.Bolt, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Schedule Fake Call", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            }
+        }
+    }
+}
+
+@Composable
+fun FakeIncomingCallScreen(
+    callerName: String,
+    callerNumber: String,
+    simSlot: Int,
+    onAnswer: () -> Unit,
+    onDecline: () -> Unit
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "AnswerPulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.15f,
+        animationSpec = infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "pulse"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF0F0E13))
+            .padding(horizontal = 24.dp, vertical = 40.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Top Badge
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = Color(0xFF2B2930),
+                modifier = Modifier.padding(top = 20.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.PhoneCallback, contentDescription = null, tint = Color(0xFFD0BCFF), modifier = Modifier.size(14.dp))
+                    Text(
+                        "Incoming call • SIM $simSlot",
+                        color = Color(0xFFD0BCFF),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // Center: Glowing Avatar & Caller Info
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .scale(pulseScale)
+                        .clip(CircleShape)
+                        .background(
+                            Brush.radialGradient(
+                                listOf(LilacPrimary, LilacPrimaryDark)
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = callerName.take(1).uppercase(),
+                        fontSize = 40.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White
+                    )
+                }
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = callerName,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = callerNumber,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFFCAC4D0)
+                    )
+                }
+            }
+
+            // Bottom Actions (Decline & Answer)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Decline
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        modifier = Modifier
+                            .size(68.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFBA1A1A))
+                            .clickable(onClick = onDecline),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.CallEnd, contentDescription = "Decline", tint = Color.White, modifier = Modifier.size(32.dp))
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Decline", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
+                }
+
+                // Answer
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        modifier = Modifier
+                            .size(68.dp)
+                            .scale(pulseScale)
+                            .clip(CircleShape)
+                            .background(Color(0xFF10B981))
+                            .clickable(onClick = onAnswer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.Call, contentDescription = "Answer", tint = Color.White, modifier = Modifier.size(32.dp))
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Answer", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FakeActiveCallScreen(
+    callerName: String,
+    callerNumber: String,
+    simSlot: Int,
+    fakeCallHelper: FakeCallHelper?,
+    onEndCall: (Long) -> Unit
+) {
+    var elapsedSeconds by remember { mutableStateOf(0L) }
+    var isMuted by remember { mutableStateOf(false) }
+    var isSpeakerOn by remember { mutableStateOf(false) }
+    var isKeypadOpen by remember { mutableStateOf(false) }
+    var dialedDigits by remember { mutableStateOf("") }
+    var isNearEar by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(1000)
+            elapsedSeconds++
+        }
+    }
+
+    DisposableEffect(Unit) {
+        fakeCallHelper?.startProximityTracking { isNear -> isNearEar = isNear }
+        onDispose { fakeCallHelper?.stopProximityTracking() }
+    }
+
+    BackHandler {
+        onEndCall(elapsedSeconds)
+    }
+
+    // Proximity Blackout: When phone is brought to ear, screen dims completely black!
+    if (isNearEar) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+        )
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF0F0E13))
+                .padding(horizontal = 24.dp, vertical = 36.dp)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Top Info & Live Timer
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(top = 16.dp)
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFF2B2930),
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    ) {
+                        Text(
+                            text = "SIM $simSlot • HD Audio",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFD0BCFF),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+
+                    Text(
+                        text = callerName,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = callerNumber,
+                        fontSize = 14.sp,
+                        color = Color(0xFFCAC4D0)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    val mins = elapsedSeconds / 60
+                    val secs = elapsedSeconds % 60
+                    Text(
+                        text = String.format("%02d:%02d", mins, secs),
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color(0xFF10B981)
+                    )
+                }
+
+                // Center: Keypad Dialpad OR Action Grid
+                if (isKeypadOpen) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 24.dp)
+                    ) {
+                        Text(
+                            text = dialedDigits.ifBlank { " " },
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().height(28.dp)
+                        )
+
+                        val keypadButtons = listOf(
+                            listOf('1', '2', '3'),
+                            listOf('4', '5', '6'),
+                            listOf('7', '8', '9'),
+                            listOf('*', '0', '#')
+                        )
+
+                        keypadButtons.forEach { row ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly
+                            ) {
+                                row.forEach { char ->
+                                    Box(
+                                        modifier = Modifier
+                                            .size(52.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFF2B2930))
+                                            .clickable {
+                                                dialedDigits += char
+                                                fakeCallHelper?.playDtmfTone(char)
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = char.toString(),
+                                            fontSize = 20.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        TextButton(onClick = { isKeypadOpen = false }) {
+                            Text("Hide Keypad", color = Color(0xFFD0BCFF), fontWeight = FontWeight.Bold)
+                        }
+                    }
+                } else {
+                    // Action Grid (Mute, Keypad, Speaker, Hold)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            // Mute
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(56.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isMuted) Color.White else Color(0xFF2B2930))
+                                        .clickable { isMuted = !isMuted },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        if (isMuted) Icons.Default.MicOff else Icons.Default.Mic,
+                                        contentDescription = "Mute",
+                                        tint = if (isMuted) Color.Black else Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(if (isMuted) "Unmute" else "Mute", fontSize = 11.sp, color = Color(0xFFCAC4D0))
+                            }
+
+                            // Keypad
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(56.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF2B2930))
+                                        .clickable { isKeypadOpen = true },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Dialpad, contentDescription = "Keypad", tint = Color.White, modifier = Modifier.size(24.dp))
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text("Keypad", fontSize = 11.sp, color = Color(0xFFCAC4D0))
+                            }
+
+                            // Speaker
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(56.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isSpeakerOn) Color.White else Color(0xFF2B2930))
+                                        .clickable { isSpeakerOn = !isSpeakerOn },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.VolumeUp,
+                                        contentDescription = "Speaker",
+                                        tint = if (isSpeakerOn) Color.Black else Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text("Speaker", fontSize = 11.sp, color = Color(0xFFCAC4D0))
+                            }
+                        }
+                    }
+                }
+
+                // Bottom End Call
+                Box(
+                    modifier = Modifier
+                        .padding(bottom = 20.dp)
+                        .size(68.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFBA1A1A))
+                        .clickable { onEndCall(elapsedSeconds) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.CallEnd, contentDescription = "End Call", tint = Color.White, modifier = Modifier.size(32.dp))
+                }
+            }
+        }
+    }
 }
