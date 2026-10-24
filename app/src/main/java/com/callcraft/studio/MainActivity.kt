@@ -5,8 +5,11 @@ import android.app.Activity
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.app.role.RoleManager
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -14,6 +17,8 @@ import android.provider.CallLog
 import android.provider.ContactsContract
 import android.provider.Settings
 import android.widget.Toast
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import com.callcraft.studio.service.FakeCallHelper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -75,6 +80,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.callcraft.studio.data.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -2420,21 +2432,213 @@ fun BulkActionsBottomSheet(
     }
 }
 
+sealed class AppUpdateState {
+    object Idle : AppUpdateState()
+    object Checking : AppUpdateState()
+    data class UpToDate(val version: String) : AppUpdateState()
+    data class Available(val version: String, val downloadUrl: String, val releaseNotes: String) : AppUpdateState()
+    data class Downloading(val progress: Int) : AppUpdateState()
+    data class Error(val message: String) : AppUpdateState()
+}
+
 @Composable
 fun SettingsScreen(
     context: Context,
     onRequestRole: () -> Unit
 ) {
-    val isRoleHeld = remember {
-        derivedStateOf {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val roleManager = context.getSystemService(Context.ROLE_SERVICE) as? RoleManager
-                roleManager?.isRoleHeld(RoleManager.ROLE_DIALER) == true
-            } else {
-                true
+    val coroutineScope = rememberCoroutineScope()
+    var updateState by remember { mutableStateOf<AppUpdateState>(AppUpdateState.Idle) }
+
+    var callLogGranted by remember { mutableStateOf(false) }
+    var contactsGranted by remember { mutableStateOf(false) }
+    var phoneStateGranted by remember { mutableStateOf(false) }
+    var isRoleHeld by remember { mutableStateOf(false) }
+
+    fun refreshDiagnostics() {
+        callLogGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_GRANTED &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALL_LOG) == PackageManager.PERMISSION_GRANTED
+        contactsGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED
+        phoneStateGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED
+        isRoleHeld = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val roleManager = context.getSystemService(Context.ROLE_SERVICE) as? RoleManager
+            roleManager?.isRoleHeld(RoleManager.ROLE_DIALER) == true
+        } else {
+            true
+        }
+    }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) {
+        refreshDiagnostics()
+    }
+
+    LaunchedEffect(Unit) {
+        refreshDiagnostics()
+    }
+
+    fun openBrowser(url: String) {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Could not open browser", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun openMail() {
+        try {
+            val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                data = Uri.parse("mailto:sachinmandawi@gmail.com?subject=CallCraft%20Feedback")
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(Intent.createChooser(emailIntent, "Send Email via"))
+        } catch (e: Exception) {
+            val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+            cm?.setPrimaryClip(ClipData.newPlainText("Developer Email", "sachinmandawi@gmail.com"))
+            Toast.makeText(context, "Email copied: sachinmandawi@gmail.com", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun copyToClipboard(label: String, text: String, message: String) {
+        val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+        cm?.setPrimaryClip(ClipData.newPlainText(label, text))
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+    }
+
+    fun checkForUpdates() {
+        updateState = AppUpdateState.Checking
+        coroutineScope.launch(Dispatchers.IO) {
+            try {
+                val url = URL("https://api.github.com/repos/sachinmandawi/Call-Craft/releases/latest")
+                val conn = (url.openConnection() as HttpURLConnection).apply {
+                    connectTimeout = 8000
+                    readTimeout = 8000
+                    setRequestProperty("User-Agent", "CallCraft-Android")
+                    setRequestProperty("Accept", "application/vnd.github.v3+json")
+                }
+                if (conn.responseCode in 200..299) {
+                    val body = conn.inputStream.bufferedReader().use { it.readText() }
+                    val json = JSONObject(body)
+                    val tagName = json.optString("tag_name", "").replace("v", "").trim()
+                    val notes = json.optString("body", "Latest updates and enhancements")
+                    val assets = json.optJSONArray("assets")
+                    var downloadUrl = ""
+                    if (assets != null) {
+                        for (i in 0 until assets.length()) {
+                            val asset = assets.getJSONObject(i)
+                            val name = asset.optString("name", "")
+                            if (name.endsWith(".apk", ignoreCase = true)) {
+                                downloadUrl = asset.optString("browser_download_url", "")
+                                break
+                            }
+                        }
+                    }
+                    withContext(Dispatchers.Main) {
+                        if (downloadUrl.isNotEmpty()) {
+                            if (tagName == "1.0.0") {
+                                updateState = AppUpdateState.UpToDate(tagName)
+                            } else {
+                                updateState = AppUpdateState.Available(tagName, downloadUrl, notes)
+                            }
+                        } else {
+                            updateState = AppUpdateState.UpToDate(tagName.ifEmpty { "1.0.0" })
+                        }
+                    }
+                } else {
+                    withContext(Dispatchers.Main) {
+                        updateState = AppUpdateState.Error("GitHub response: ${conn.responseCode}")
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    updateState = AppUpdateState.Error(e.localizedMessage ?: "Failed to connect to GitHub")
+                }
             }
         }
-    }.value
+    }
+
+    fun downloadAndInstallUpdate(downloadUrl: String) {
+        updateState = AppUpdateState.Downloading(0)
+        coroutineScope.launch(Dispatchers.IO) {
+            try {
+                val updateDir = File(context.cacheDir, "updates")
+                if (!updateDir.exists()) updateDir.mkdirs()
+                val apkFile = File(updateDir, "CallCraft-latest.apk")
+                if (apkFile.exists()) apkFile.delete()
+
+                var currentUrl = downloadUrl
+                var conn = URL(currentUrl).openConnection() as HttpURLConnection
+                conn.connectTimeout = 15000
+                conn.readTimeout = 15000
+                conn.setRequestProperty("User-Agent", "CallCraft-Android")
+                conn.instanceFollowRedirects = true
+
+                var redirectStatus = conn.responseCode
+                if (redirectStatus == HttpURLConnection.HTTP_MOVED_TEMP || redirectStatus == HttpURLConnection.HTTP_MOVED_PERM || redirectStatus == 307 || redirectStatus == 308) {
+                    val redirectedUrl = conn.getHeaderField("Location")
+                    if (!redirectedUrl.isNullOrEmpty()) {
+                        currentUrl = redirectedUrl
+                        conn = URL(currentUrl).openConnection() as HttpURLConnection
+                        conn.setRequestProperty("User-Agent", "CallCraft-Android")
+                    }
+                }
+
+                val totalLength = conn.contentLength
+                val input = conn.inputStream
+                val output = FileOutputStream(apkFile)
+                val buffer = ByteArray(8192)
+                var downloaded: Long = 0
+                var bytesRead: Int
+
+                while (input.read(buffer).also { bytesRead = it } != -1) {
+                    downloaded += bytesRead
+                    output.write(buffer, 0, bytesRead)
+                    if (totalLength > 0) {
+                        val progress = ((downloaded * 100) / totalLength).toInt()
+                        withContext(Dispatchers.Main) {
+                            updateState = AppUpdateState.Downloading(progress)
+                        }
+                    }
+                }
+
+                output.flush()
+                output.close()
+                input.close()
+
+                withContext(Dispatchers.Main) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !context.packageManager.canRequestPackageInstalls()) {
+                        Toast.makeText(context, "Please allow CallCraft to install updates", Toast.LENGTH_LONG).show()
+                        val manageIntent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                            data = Uri.parse("package:${context.packageName}")
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        context.startActivity(manageIntent)
+                    }
+
+                    val apkUri = FileProvider.getUriForFile(
+                        context,
+                        "${context.packageName}.fileprovider",
+                        apkFile
+                    )
+                    val installIntent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(apkUri, "application/vnd.android.package-archive")
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(installIntent)
+                    updateState = AppUpdateState.Idle
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    updateState = AppUpdateState.Error("Download failed: ${e.localizedMessage}")
+                    Toast.makeText(context, "Download failed: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -2443,14 +2647,34 @@ fun SettingsScreen(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // SECTION 1: PERMISSIONS & SYSTEM DIAGNOSTICS
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                "Permissions & System",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = LilacPrimary,
-                modifier = Modifier.padding(start = 8.dp)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "PERMISSIONS & DIAGNOSTICS",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = LilacPrimary,
+                    letterSpacing = 1.sp
+                )
+                IconButton(
+                    onClick = { refreshDiagnostics() },
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Refresh,
+                        contentDescription = "Refresh Diagnostics",
+                        tint = LilacPrimary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
 
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -2462,6 +2686,7 @@ fun SettingsScreen(
                     modifier = Modifier.padding(18.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
+                    // Item: Dialer Role
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -2474,7 +2699,7 @@ fun SettingsScreen(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(44.dp)
+                                    .size(42.dp)
                                     .clip(RoundedCornerShape(14.dp))
                                     .background(if (isRoleHeld) StatusIncoming.copy(alpha = 0.15f) else LilacPrimary.copy(alpha = 0.15f)),
                                 contentAlignment = Alignment.Center
@@ -2483,20 +2708,19 @@ fun SettingsScreen(
                                     if (isRoleHeld) Icons.Default.Shield else Icons.Default.Warning,
                                     contentDescription = null,
                                     tint = if (isRoleHeld) StatusIncoming else LilacPrimary,
-                                    modifier = Modifier.size(24.dp)
+                                    modifier = Modifier.size(22.dp)
                                 )
                             }
-
                             Column {
                                 Text(
-                                    "Dialer Role",
-                                    fontSize = 15.sp,
+                                    "Default Dialer Role",
+                                    fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = LilacText
                                 )
                                 Text(
-                                    "Default Phone App permission",
-                                    fontSize = 12.sp,
+                                    "Required to edit system call logs",
+                                    fontSize = 11.sp,
                                     color = LilacTextMuted
                                 )
                             }
@@ -2525,74 +2749,586 @@ fun SettingsScreen(
                         )
                     }
 
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isRoleHeld) StatusIncoming.copy(alpha = 0.10f) else StatusRejected.copy(alpha = 0.10f),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(if (isRoleHeld) StatusIncoming else StatusRejected)
-                            )
-                            Text(
-                                text = if (isRoleHeld) "Role Active • Ready to edit logs" else "Role Inactive • Turn switch ON to edit",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isRoleHeld) StatusIncoming else StatusRejected
+                    HorizontalDivider(color = LilacBorder.copy(alpha = 0.5f))
+
+                    // Item: Call Log Access
+                    DiagnosticPermissionRow(
+                        title = "Call Log Access",
+                        subtitle = "READ_CALL_LOG & WRITE_CALL_LOG",
+                        isGranted = callLogGranted,
+                        onGrant = {
+                            permissionLauncher.launch(
+                                arrayOf(
+                                    Manifest.permission.READ_CALL_LOG,
+                                    Manifest.permission.WRITE_CALL_LOG
+                                )
                             )
                         }
-                    }
+                    )
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    // Item: Contacts Access
+                    DiagnosticPermissionRow(
+                        title = "Contacts Access",
+                        subtitle = "READ_CONTACTS (names & avatars)",
+                        isGranted = contactsGranted,
+                        onGrant = {
+                            permissionLauncher.launch(arrayOf(Manifest.permission.READ_CONTACTS))
+                        }
+                    )
+
+                    // Item: Phone State Access
+                    DiagnosticPermissionRow(
+                        title = "Phone State Access",
+                        subtitle = "READ_PHONE_STATE (carrier & SIM detection)",
+                        isGranted = phoneStateGranted,
+                        onGrant = {
+                            permissionLauncher.launch(arrayOf(Manifest.permission.READ_PHONE_STATE))
+                        }
+                    )
+
+                    // App Settings Shortcut
+                    OutlinedButton(
+                        onClick = {
+                            try {
+                                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = Uri.fromParts("package", context.packageName, null)
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Could not open settings", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = LilacPrimary),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, LilacPrimary.copy(alpha = 0.4f)),
+                        contentPadding = PaddingValues(vertical = 10.dp)
+                    ) {
+                        Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Open App System Settings", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            }
+        }
+
+        // SECTION 2: DEVELOPER & COMMUNITY
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                "DEVELOPER & COMMUNITY",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = LilacPrimary,
+                modifier = Modifier.padding(start = 4.dp),
+                letterSpacing = 1.sp
+            )
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                color = LilacBackground,
+                border = androidx.compose.foundation.BorderStroke(1.dp, LilacBorder)
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Developer Profile
+                    SettingsLinkItem(
+                        icon = Icons.Default.Person,
+                        title = "Sachin Mandawi",
+                        subtitle = "Lead Developer • @sachinmandawi on GitHub",
+                        onClick = { openBrowser("https://github.com/sachinmandawi") }
+                    )
+
+                    HorizontalDivider(color = LilacBorder.copy(alpha = 0.5f))
+
+                    // CallCraft Repository
+                    SettingsLinkItem(
+                        icon = Icons.Default.Code,
+                        title = "CallCraft Repository",
+                        subtitle = "Source code & releases on GitHub",
+                        onClick = { openBrowser("https://github.com/sachinmandawi/Call-Craft") }
+                    )
+
+                    HorizontalDivider(color = LilacBorder.copy(alpha = 0.5f))
+
+                    // Contact Developer (Email)
+                    SettingsLinkItem(
+                        icon = Icons.Default.Email,
+                        title = "Contact Developer",
+                        subtitle = "sachinmandawi@gmail.com",
+                        onClick = { openMail() }
+                    )
+
+                    HorizontalDivider(color = LilacBorder.copy(alpha = 0.5f))
+
+                    // Report an Issue
+                    SettingsLinkItem(
+                        icon = Icons.Default.BugReport,
+                        title = "Report an Issue / Bug",
+                        subtitle = "Submit issue report on GitHub",
+                        onClick = { openBrowser("https://github.com/sachinmandawi/Call-Craft/issues/new") }
+                    )
+                }
+            }
+        }
+
+        // SECTION 3: OTHER APPS BY DEVELOPER
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                "OTHER APPS BY DEVELOPER",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = LilacPrimary,
+                modifier = Modifier.padding(start = 4.dp),
+                letterSpacing = 1.sp
+            )
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { openBrowser("https://github.com/sachinmandawi/CleanBar") },
+                shape = RoundedCornerShape(24.dp),
+                color = LilacBackground,
+                border = androidx.compose.foundation.BorderStroke(1.dp, LilacBorder)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color(0xFF38BDF8).copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            Icons.Default.Info,
+                            Icons.Default.Widgets,
                             contentDescription = null,
-                            tint = LilacPrimary,
-                            modifier = Modifier.size(14.dp)
+                            tint = Color(0xFF0284C7),
+                            modifier = Modifier.size(24.dp)
                         )
+                    }
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                "CleanBar",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = LilacText
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = LilacPrimaryContainer
+                            ) {
+                                Text(
+                                    "No Root",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = LilacOnPrimaryContainer,
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                )
+                            }
+                        }
                         Text(
-                            text = "Restore original dialer anytime from Phone Settings → Default Apps.",
+                            "Status Bar & System Icon Hider powered by Shizuku",
                             fontSize = 11.sp,
                             color = LilacTextMuted,
                             lineHeight = 15.sp
                         )
                     }
+
+                    Icon(
+                        Icons.Default.OpenInNew,
+                        contentDescription = "Open CleanBar GitHub",
+                        tint = LilacPrimary,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
         }
 
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            color = LilacSurface,
-            border = androidx.compose.foundation.BorderStroke(1.dp, LilacBorder)
-        ) {
-            Row(
+        // SECTION 4: SUPPORT DEVELOPER (Reference UI Design)
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                "SUPPORT DEVELOPER",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = LilacPrimary,
+                modifier = Modifier.padding(start = 4.dp),
+                letterSpacing = 1.sp
+            )
+
+            // UPI Card
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .clickable {
+                        copyToClipboard("UPI ID", "darkcaptain@ybl", "UPI ID copied: darkcaptain@ybl")
+                    },
+                shape = RoundedCornerShape(18.dp),
+                color = Color(0xFF1E1E1E),
+                shadowElevation = 2.dp
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Call ", fontSize = 12.sp, fontWeight = FontWeight.Black, color = LilacText)
-                    Text("Craft", fontSize = 12.sp, fontWeight = FontWeight.Black, color = LilacPrimary)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // UPI Emblem (Orange / Green folded triangle)
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFF2A2A2A)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("▲", color = Color(0xFF10B981), fontSize = 14.sp, fontWeight = FontWeight.Black)
+                        }
+
+                        Text(
+                            "UPI • darkcaptain@ybl",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    IconButton(
+                        onClick = {
+                            copyToClipboard("UPI ID", "darkcaptain@ybl", "UPI ID copied: darkcaptain@ybl")
+                        },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.ContentCopy,
+                            contentDescription = "Copy UPI ID",
+                            tint = Color(0xFF9E9E9E),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
-                Text("v1.0.0", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = LilacPrimary)
+            }
+
+            // Binance Card
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        copyToClipboard("Binance ID", "1138545342", "Binance ID copied: 1138545342")
+                    },
+                shape = RoundedCornerShape(18.dp),
+                color = Color(0xFF1E1E1E),
+                shadowElevation = 2.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Binance Gold Icon
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFFF0B90B)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("❖", color = Color.Black, fontSize = 13.sp, fontWeight = FontWeight.Black)
+                        }
+
+                        Text(
+                            "Binance • 1138545342",
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    IconButton(
+                        onClick = {
+                            copyToClipboard("Binance ID", "1138545342", "Binance ID copied: 1138545342")
+                        },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.ContentCopy,
+                            contentDescription = "Copy Binance ID",
+                            tint = Color(0xFF9E9E9E),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
             }
         }
+
+        // SECTION 5: APP VERSION & IN-PLACE UPDATER
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                "UPDATES & APP INFO",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = LilacPrimary,
+                modifier = Modifier.padding(start = 4.dp),
+                letterSpacing = 1.sp
+            )
+
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                color = LilacBackground,
+                border = androidx.compose.foundation.BorderStroke(1.dp, LilacBorder)
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Call", fontSize = 16.sp, fontWeight = FontWeight.Black, color = LilacText)
+                                Text("Craft", fontSize = 16.sp, fontWeight = FontWeight.Black, color = LilacPrimary)
+                            }
+                            Text(
+                                "Installed Version: v1.0.0 (Build 1)",
+                                fontSize = 12.sp,
+                                color = LilacTextMuted
+                            )
+                        }
+
+                        Button(
+                            onClick = { checkForUpdates() },
+                            enabled = updateState !is AppUpdateState.Checking && updateState !is AppUpdateState.Downloading,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = LilacPrimary),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                        ) {
+                            Icon(Icons.Default.SystemUpdate, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                if (updateState is AppUpdateState.Checking) "Checking..." else "Check Update",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    // Dynamic update states
+                    when (val state = updateState) {
+                        is AppUpdateState.UpToDate -> {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = StatusIncoming.copy(alpha = 0.12f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(Icons.Default.Check, contentDescription = null, tint = StatusIncoming, modifier = Modifier.size(16.dp))
+                                    Text(
+                                        "You are running the latest version (v${state.version})!",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = StatusIncoming
+                                    )
+                                }
+                            }
+                        }
+
+                        is AppUpdateState.Available -> {
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = LilacPrimaryContainer.copy(alpha = 0.5f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, LilacPrimary.copy(alpha = 0.3f)),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            "New Release Available: v${state.version}",
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = LilacOnPrimaryContainer
+                                        )
+                                    }
+
+                                    Text(
+                                        "Update will install seamlessly without deleting your existing app or data.",
+                                        fontSize = 11.sp,
+                                        color = LilacTextMuted
+                                    )
+
+                                    Button(
+                                        onClick = { downloadAndInstallUpdate(state.downloadUrl) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(12.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = LilacPrimary)
+                                    ) {
+                                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Download & Install Update (In-Place)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+
+                        is AppUpdateState.Downloading -> {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text("Downloading update APK...", fontSize = 12.sp, color = LilacText, fontWeight = FontWeight.SemiBold)
+                                    Text("${state.progress}%", fontSize = 12.sp, color = LilacPrimary, fontWeight = FontWeight.Bold)
+                                }
+                                LinearProgressIndicator(
+                                    progress = { state.progress / 100f },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(6.dp)
+                                        .clip(RoundedCornerShape(3.dp)),
+                                    color = LilacPrimary,
+                                    trackColor = LilacSurfaceVariant
+                                )
+                            }
+                        }
+
+                        is AppUpdateState.Error -> {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = StatusMissed.copy(alpha = 0.12f),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = state.message,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = StatusMissed,
+                                    modifier = Modifier.padding(12.dp)
+                                )
+                            }
+                        }
+
+                        else -> {}
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+    }
+}
+
+@Composable
+fun DiagnosticPermissionRow(
+    title: String,
+    subtitle: String,
+    isGranted: Boolean,
+    onGrant: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = LilacText)
+            Text(subtitle, fontSize = 11.sp, color = LilacTextMuted)
+        }
+
+        if (isGranted) {
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = StatusIncoming.copy(alpha = 0.15f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(StatusIncoming))
+                    Text("Granted", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = StatusIncoming)
+                }
+            }
+        } else {
+            Button(
+                onClick = onGrant,
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = StatusRejected),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+            ) {
+                Text("Grant", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            }
+        }
+    }
+}
+
+@Composable
+fun SettingsLinkItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(LilacPrimary.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = LilacPrimary, modifier = Modifier.size(20.dp))
+        }
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = LilacText)
+            Text(subtitle, fontSize = 11.sp, color = LilacTextMuted)
+        }
+
+        Icon(Icons.Default.OpenInNew, contentDescription = null, tint = LilacTextMuted, modifier = Modifier.size(16.dp))
     }
 }
 

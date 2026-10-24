@@ -31,7 +31,15 @@ import {
   Video,
   Users,
   MessageSquare,
-  ChevronUp
+  ChevronUp,
+  Copy,
+  ExternalLink,
+  Mail,
+  Bug,
+  Github,
+  Download,
+  RefreshCw,
+  LayoutGrid
 } from 'lucide-react';
 
 export type CallType = 1 | 2 | 3 | 5; // 1: Incoming, 2: Outgoing, 3: Missed, 5: Rejected
@@ -302,6 +310,41 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<number | 'ALL'>('ALL');
   const [isDialerRoleGranted, setIsDialerRoleGranted] = useState(true);
+  const [hasCallLogPermission, setHasCallLogPermission] = useState(true);
+  const [hasContactsPermission, setHasContactsPermission] = useState(true);
+  const [hasPhoneStatePermission, setHasPhoneStatePermission] = useState(true);
+  const [copiedToast, setCopiedToast] = useState<string | null>(null);
+  const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'latest' | 'available' | 'error'>('idle');
+  const [latestReleaseInfo, setLatestReleaseInfo] = useState<{ version: string; url: string; notes: string } | null>(null);
+
+  const triggerCopy = (label: string, text: string) => {
+    navigator.clipboard?.writeText(text);
+    setCopiedToast(`${label} copied: ${text}`);
+    setTimeout(() => setCopiedToast(null), 2500);
+  };
+
+  const checkGithubUpdates = async () => {
+    setUpdateStatus('checking');
+    try {
+      const res = await fetch('https://api.github.com/repos/sachinmandawi/Call-Craft/releases/latest');
+      if (res.ok) {
+        const data = await res.json();
+        const tag = (data.tag_name || '').replace('v', '').trim();
+        const apkAsset = (data.assets || []).find((a: any) => a.name.endsWith('.apk'));
+        const downloadUrl = apkAsset?.browser_download_url || data.html_url;
+        if (tag === '1.0.0') {
+          setUpdateStatus('latest');
+        } else {
+          setLatestReleaseInfo({ version: tag || '1.0.0', url: downloadUrl, notes: data.body || 'Bug fixes and improvements' });
+          setUpdateStatus('available');
+        }
+      } else {
+        setUpdateStatus('latest');
+      }
+    } catch {
+      setUpdateStatus('error');
+    }
+  };
 
   // Hardware SIM Simulation State (Dual SIM, SIM 1 Only, SIM 2 Only)
   const [simHardwareMode, setSimHardwareMode] = useState<'dual' | 'sim1_only' | 'sim2_only'>('dual');
@@ -1075,7 +1118,8 @@ export default function App() {
             </div>
 
             {/* SCREEN 2: SETTINGS */}
-            <div className="w-full h-full shrink-0 flex flex-col overflow-y-auto px-5 py-4 space-y-4">
+            <div className="w-full h-full shrink-0 flex flex-col overflow-y-auto px-4 py-4 space-y-4">
+              {/* Header */}
               <div className="flex items-center gap-3 pb-2 border-b border-[#E7E0EC] shrink-0">
                 <button
                   onClick={() => setCurrentScreen('recents')}
@@ -1085,16 +1129,41 @@ export default function App() {
                 </button>
                 <div>
                   <h2 className="text-lg font-black text-[#1D1B20]">Settings</h2>
-                  <p className="text-[11px] text-[#6750A4] font-semibold">Preferences & Permissions</p>
+                  <p className="text-[11px] text-[#6750A4] font-semibold">Preferences, System & Diagnostics</p>
                 </div>
               </div>
 
-              <div>
-                <span className="text-[11px] font-bold text-[#6750A4] uppercase tracking-wider px-2 block mb-2">
-                  Permissions & System
-                </span>
+              {/* Toast for Copy Notification */}
+              {copiedToast && (
+                <div className="bg-[#1D1B20] text-white text-xs px-3.5 py-2 rounded-xl shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-150 sticky top-0 z-30">
+                  <Check className="w-4 h-4 text-[#10B981]" />
+                  <span className="font-medium">{copiedToast}</span>
+                </div>
+              )}
 
-                <div className="bg-[#FEF7FF] rounded-[24px] p-4 border border-[#E7E0EC] shadow-xs space-y-3">
+              {/* SECTION 1: PERMISSIONS & SYSTEM DIAGNOSTICS */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-[11px] font-bold text-[#6750A4] uppercase tracking-wider">
+                    Permissions & Diagnostics
+                  </span>
+                  <button
+                    onClick={() => {
+                      setIsDialerRoleGranted(true);
+                      setHasCallLogPermission(true);
+                      setHasContactsPermission(true);
+                      setHasPhoneStatePermission(true);
+                      triggerCopy('Diagnostics', 'All system permissions re-verified');
+                    }}
+                    className="p-1 rounded-full text-[#6750A4] hover:bg-[#6750A4]/10 transition"
+                    title="Refresh Diagnostics"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="bg-[#FEF7FF] rounded-[24px] p-4 border border-[#E7E0EC] shadow-xs space-y-3.5">
+                  {/* Item 1: Dialer Role */}
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
@@ -1103,39 +1172,341 @@ export default function App() {
                         {isDialerRoleGranted ? <ShieldCheck className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5" />}
                       </div>
                       <div className="min-w-0">
-                        <h3 className="text-sm font-bold text-[#1D1B20] leading-tight">Dialer Role</h3>
-                        <p className="text-xs text-[#49454F] font-medium leading-tight mt-0.5">Default Phone App permission</p>
+                        <h3 className="text-sm font-bold text-[#1D1B20] leading-tight">Default Dialer Role</h3>
+                        <p className="text-[11px] text-[#49454F] font-medium leading-tight mt-0.5">Required to edit system call logs</p>
                       </div>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => setIsDialerRoleGranted(!isDialerRoleGranted)}
-                      style={{ width: '52px', height: '32px' }}
-                      className={`relative inline-flex shrink-0 items-center rounded-full p-1 transition-colors duration-300 ${
+                      style={{ width: '48px', height: '28px' }}
+                      className={`relative inline-flex shrink-0 items-center rounded-full p-0.5 transition-colors duration-300 ${
                         isDialerRoleGranted ? 'bg-[#6750A4]' : 'bg-[#ECE6F0] border border-[#E7E0EC]'
                       }`}
                     >
                       <span
-                        className={`pointer-events-none inline-flex h-6 w-6 transform items-center justify-center rounded-full bg-white shadow-md transition duration-300 ${
-                          isDialerRoleGranted ? 'translate-x-5' : 'translate-x-0'
+                        className={`pointer-events-none inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white shadow-md transition duration-300 ${
+                          isDialerRoleGranted ? 'translate-x-5' : 'translate-x-0.5'
                         }`}
                       >
-                        {isDialerRoleGranted && <Check className="w-3.5 h-3.5 text-[#6750A4] stroke-[3]" />}
+                        {isDialerRoleGranted && <Check className="w-3 h-3 text-[#6750A4] stroke-[3]" />}
                       </span>
                     </button>
                   </div>
 
-                  <div className={`rounded-xl px-3 py-2 flex items-center gap-2 ${
-                    isDialerRoleGranted ? 'bg-[#10B981]/10 text-[#10B981]' : 'bg-[#F59E0B]/10 text-[#F59E0B]'
-                  }`}>
-                    <span className="w-2 h-2 rounded-full bg-current shrink-0" />
-                    <span className="text-xs font-bold leading-tight">
-                      {isDialerRoleGranted ? 'Role Active • Ready to edit logs' : 'Role Inactive • Turn switch ON to edit'}
-                    </span>
+                  <div className="h-px bg-[#E7E0EC]/60" />
+
+                  {/* Item 2: Call Log Access */}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-[#1D1B20]">Call Log Access</div>
+                      <div className="text-[10px] text-[#79747E]">READ_CALL_LOG & WRITE_CALL_LOG</div>
+                    </div>
+                    {hasCallLogPermission ? (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#10B981]/15 text-[#10B981] text-[10px] font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" /> Granted
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => setHasCallLogPermission(true)}
+                        className="px-2.5 py-1 rounded-lg bg-[#F59E0B] text-white text-[10px] font-bold"
+                      >
+                        Grant
+                      </button>
+                    )}
                   </div>
+
+                  {/* Item 3: Contacts Access */}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-[#1D1B20]">Contacts Access</div>
+                      <div className="text-[10px] text-[#79747E]">READ_CONTACTS (Names & Monograms)</div>
+                    </div>
+                    {hasContactsPermission ? (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#10B981]/15 text-[#10B981] text-[10px] font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" /> Granted
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => setHasContactsPermission(true)}
+                        className="px-2.5 py-1 rounded-lg bg-[#F59E0B] text-white text-[10px] font-bold"
+                      >
+                        Grant
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Item 4: Phone State Access */}
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-[#1D1B20]">Phone State Access</div>
+                      <div className="text-[10px] text-[#79747E]">READ_PHONE_STATE (Carrier & SIM info)</div>
+                    </div>
+                    {hasPhoneStatePermission ? (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#10B981]/15 text-[#10B981] text-[10px] font-bold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" /> Granted
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => setHasPhoneStatePermission(true)}
+                        className="px-2.5 py-1 rounded-lg bg-[#F59E0B] text-white text-[10px] font-bold"
+                      >
+                        Grant
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Open App Settings Button */}
+                  <button
+                    onClick={() => triggerCopy('System Settings', 'Opened App Permissions Settings')}
+                    className="w-full mt-1 py-2 px-3 rounded-xl border border-[#6750A4]/30 text-[#6750A4] text-xs font-bold flex items-center justify-center gap-2 hover:bg-[#6750A4]/5 transition"
+                  >
+                    <SettingsIcon className="w-3.5 h-3.5" />
+                    <span>Open App System Settings</span>
+                  </button>
                 </div>
               </div>
+
+              {/* SECTION 2: DEVELOPER & COMMUNITY */}
+              <div className="space-y-2">
+                <span className="text-[11px] font-bold text-[#6750A4] uppercase tracking-wider px-1 block">
+                  Developer & Community
+                </span>
+
+                <div className="bg-[#FEF7FF] rounded-[24px] p-4 border border-[#E7E0EC] shadow-xs space-y-3">
+                  {/* Sachin Mandawi Profile */}
+                  <a
+                    href="https://github.com/sachinmandawi"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between gap-3 group text-left hover:opacity-90 transition"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-[#6750A4]/10 text-[#6750A4] flex items-center justify-center shrink-0">
+                        <Github className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-[#1D1B20]">Sachin Mandawi</div>
+                        <div className="text-[10px] text-[#79747E]">Lead Developer • @sachinmandawi on GitHub</div>
+                      </div>
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-[#79747E] group-hover:text-[#6750A4] transition shrink-0" />
+                  </a>
+
+                  <div className="h-px bg-[#E7E0EC]/60" />
+
+                  {/* CallCraft Repository */}
+                  <a
+                    href="https://github.com/sachinmandawi/Call-Craft"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between gap-3 group text-left hover:opacity-90 transition"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-[#6750A4]/10 text-[#6750A4] flex items-center justify-center shrink-0">
+                        <Smartphone className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-[#1D1B20]">CallCraft Repository</div>
+                        <div className="text-[10px] text-[#79747E]">Source code & releases on GitHub</div>
+                      </div>
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-[#79747E] group-hover:text-[#6750A4] transition shrink-0" />
+                  </a>
+
+                  <div className="h-px bg-[#E7E0EC]/60" />
+
+                  {/* Contact Developer (Email) */}
+                  <a
+                    href="mailto:sachinmandawi@gmail.com?subject=CallCraft%20Inquiry"
+                    className="flex items-center justify-between gap-3 group text-left hover:opacity-90 transition"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-[#6750A4]/10 text-[#6750A4] flex items-center justify-center shrink-0">
+                        <Mail className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-[#1D1B20]">Contact Developer</div>
+                        <div className="text-[10px] text-[#79747E]">sachinmandawi@gmail.com</div>
+                      </div>
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-[#79747E] group-hover:text-[#6750A4] transition shrink-0" />
+                  </a>
+
+                  <div className="h-px bg-[#E7E0EC]/60" />
+
+                  {/* Report an Issue */}
+                  <a
+                    href="https://github.com/sachinmandawi/Call-Craft/issues/new"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between gap-3 group text-left hover:opacity-90 transition"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-[#F43F5E]/10 text-[#F43F5E] flex items-center justify-center shrink-0">
+                        <Bug className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-[#1D1B20]">Report an Issue / Bug</div>
+                        <div className="text-[10px] text-[#79747E]">Submit bug report on GitHub Issues</div>
+                      </div>
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-[#79747E] group-hover:text-[#6750A4] transition shrink-0" />
+                  </a>
+                </div>
+              </div>
+
+              {/* SECTION 3: OTHER APPS BY DEVELOPER */}
+              <div className="space-y-2">
+                <span className="text-[11px] font-bold text-[#6750A4] uppercase tracking-wider px-1 block">
+                  Other Apps by Developer
+                </span>
+
+                <a
+                  href="https://github.com/sachinmandawi/CleanBar"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block bg-[#FEF7FF] rounded-[24px] p-4 border border-[#E7E0EC] shadow-xs hover:border-[#6750A4]/40 transition group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-[#0284C7]/15 text-[#0284C7] flex items-center justify-center shrink-0">
+                      <LayoutGrid className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-[#1D1B20]">CleanBar</span>
+                        <span className="px-1.5 py-0.5 rounded bg-[#E8DEF8] text-[#21005D] text-[9px] font-bold">
+                          Zero Root
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#49454F] leading-snug mt-0.5">
+                        Status Bar & System Icon Hider powered by Shizuku.
+                      </p>
+                    </div>
+                    <ExternalLink className="w-4 h-4 text-[#79747E] group-hover:text-[#6750A4] transition shrink-0" />
+                  </div>
+                </a>
+              </div>
+
+              {/* SECTION 4: SUPPORT DEVELOPER (Reference UI Design) */}
+              <div className="space-y-2">
+                <span className="text-[11px] font-bold text-[#6750A4] uppercase tracking-wider px-1 block">
+                  Support Developer
+                </span>
+
+                {/* UPI Card */}
+                <div
+                  onClick={() => triggerCopy('UPI ID', 'darkcaptain@ybl')}
+                  className="bg-[#1E1E1E] text-white rounded-[18px] px-4 py-3.5 flex items-center justify-between cursor-pointer hover:bg-[#252525] transition shadow-sm active:scale-[0.99]"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-6 h-6 rounded-md bg-[#2A2A2A] flex items-center justify-center text-[#10B981] font-black text-xs shrink-0">
+                      ▲
+                    </div>
+                    <span className="text-sm font-semibold tracking-wide truncate">
+                      UPI • darkcaptain@ybl
+                    </span>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      triggerCopy('UPI ID', 'darkcaptain@ybl');
+                    }}
+                    className="p-1 rounded text-[#9E9E9E] hover:text-white transition shrink-0"
+                    title="Copy UPI ID"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Binance Card */}
+                <div
+                  onClick={() => triggerCopy('Binance ID', '1138545342')}
+                  className="bg-[#1E1E1E] text-white rounded-[18px] px-4 py-3.5 flex items-center justify-between cursor-pointer hover:bg-[#252525] transition shadow-sm active:scale-[0.99]"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-6 h-6 rounded-md bg-[#F0B90B] flex items-center justify-center text-black font-black text-xs shrink-0">
+                      ❖
+                    </div>
+                    <span className="text-sm font-semibold tracking-wide truncate">
+                      Binance • 1138545342
+                    </span>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      triggerCopy('Binance ID', '1138545342');
+                    }}
+                    className="p-1 rounded text-[#9E9E9E] hover:text-white transition shrink-0"
+                    title="Copy Binance ID"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* SECTION 5: APP VERSION & IN-PLACE UPDATER */}
+              <div className="space-y-2">
+                <span className="text-[11px] font-bold text-[#6750A4] uppercase tracking-wider px-1 block">
+                  Updates & App Info
+                </span>
+
+                <div className="bg-[#FEF7FF] rounded-[24px] p-4 border border-[#E7E0EC] shadow-xs space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-black text-[#1D1B20]">
+                        Call<span className="text-[#6750A4]">Craft</span>
+                      </div>
+                      <div className="text-[11px] text-[#79747E] font-medium">Installed Version: v1.0.0 (Build 1)</div>
+                    </div>
+
+                    <button
+                      onClick={checkGithubUpdates}
+                      disabled={updateStatus === 'checking'}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#6750A4] hover:bg-[#553F8D] text-white text-xs font-bold flex items-center gap-1.5 transition disabled:opacity-60 shadow-xs"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${updateStatus === 'checking' ? 'animate-spin' : ''}`} />
+                      <span>{updateStatus === 'checking' ? 'Checking...' : 'Check Update'}</span>
+                    </button>
+                  </div>
+
+                  {updateStatus === 'latest' && (
+                    <div className="p-2.5 rounded-xl bg-[#10B981]/10 text-[#10B981] flex items-center gap-2">
+                      <Check className="w-4 h-4 shrink-0" />
+                      <span className="text-xs font-bold">You are on the latest version (v1.0.0)!</span>
+                    </div>
+                  )}
+
+                  {updateStatus === 'available' && latestReleaseInfo && (
+                    <div className="p-3 rounded-2xl bg-[#E8DEF8] border border-[#6750A4]/30 space-y-2">
+                      <div className="text-xs font-bold text-[#21005D]">
+                        New Release Available: v{latestReleaseInfo.version}
+                      </div>
+                      <p className="text-[11px] text-[#49454F] leading-tight">
+                        Seamless in-place update. No deletion or uninstallation of old APK required.
+                      </p>
+                      <a
+                        href={latestReleaseInfo.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 w-full py-2 rounded-xl bg-[#6750A4] text-white text-xs font-bold hover:bg-[#553F8D] transition"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>Download & Install Update</span>
+                      </a>
+                    </div>
+                  )}
+
+                  {updateStatus === 'error' && (
+                    <div className="p-2.5 rounded-xl bg-[#F43F5E]/10 text-[#F43F5E] text-xs font-medium">
+                      Unable to connect to GitHub Releases API.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="h-6" />
             </div>
           </div>
         </div>
