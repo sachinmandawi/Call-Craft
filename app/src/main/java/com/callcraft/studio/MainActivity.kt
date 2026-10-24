@@ -17,6 +17,7 @@ import android.provider.CallLog
 import android.provider.ContactsContract
 import android.provider.Settings
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -2703,13 +2704,6 @@ fun SplashScreen(
     }
 }
 
-data class AppPermissionDialogInfo(
-    val title: String,
-    val permissionName: String,
-    val description: String,
-    val permissions: Array<String>
-)
-
 @Composable
 fun SettingsScreen(
     context: Context,
@@ -2724,7 +2718,6 @@ fun SettingsScreen(
     var phoneStateGranted by remember { mutableStateOf(false) }
     var isRoleHeld by remember { mutableStateOf(false) }
     var showLogsDialog by remember { mutableStateOf(false) }
-    var pendingPermissionDialog by remember { mutableStateOf<AppPermissionDialogInfo?>(null) }
 
     fun refreshDiagnostics() {
         callLogGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_GRANTED &&
@@ -2743,6 +2736,34 @@ fun SettingsScreen(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) {
         refreshDiagnostics()
+    }
+
+    fun requestPermissionWithSystemFallback(permissions: Array<String>) {
+        val activity = context as? Activity
+        val ungranted = permissions.filter {
+            ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
+        }
+        if (ungranted.isEmpty()) {
+            refreshDiagnostics()
+            return
+        }
+
+        // 1. Launch phone's default system popup
+        permissionLauncher.launch(ungranted.toTypedArray())
+
+        // 2. If OS has permanently silenced the dialog (shouldShowRationale is false on an ungranted permission):
+        val firstPerm = ungranted.first()
+        val canShowRationale = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(activity, firstPerm)
+        if (activity != null && !canShowRationale) {
+            try {
+                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.fromParts("package", context.packageName, null)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+                onShowToast("Allow permission in phone Settings")
+            } catch (_: Exception) {}
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -3032,11 +3053,8 @@ fun SettingsScreen(
                         title = "Call Logs Access",
                         isGranted = callLogGranted,
                         onGrant = {
-                            pendingPermissionDialog = AppPermissionDialogInfo(
-                                title = "Allow CallCraft to access your call logs?",
-                                permissionName = "Call Logs",
-                                description = "CallCraft requires access to view, edit, search, and manage your call history.",
-                                permissions = arrayOf(
+                            requestPermissionWithSystemFallback(
+                                arrayOf(
                                     Manifest.permission.READ_CALL_LOG,
                                     Manifest.permission.WRITE_CALL_LOG
                                 )
@@ -3049,12 +3067,7 @@ fun SettingsScreen(
                         title = "Contacts Access",
                         isGranted = contactsGranted,
                         onGrant = {
-                            pendingPermissionDialog = AppPermissionDialogInfo(
-                                title = "Allow CallCraft to access your contacts?",
-                                permissionName = "Contacts",
-                                description = "CallCraft requires Contacts permission to match numbers with your address book and show contact names.",
-                                permissions = arrayOf(Manifest.permission.READ_CONTACTS)
-                            )
+                            requestPermissionWithSystemFallback(arrayOf(Manifest.permission.READ_CONTACTS))
                         }
                     )
 
@@ -3063,12 +3076,7 @@ fun SettingsScreen(
                         title = "Phone State Access",
                         isGranted = phoneStateGranted,
                         onGrant = {
-                            pendingPermissionDialog = AppPermissionDialogInfo(
-                                title = "Allow CallCraft to access phone state?",
-                                permissionName = "Phone State & SIM",
-                                description = "CallCraft requires Phone State permission to detect dual-SIM carriers and simulate authentic call screens.",
-                                permissions = arrayOf(Manifest.permission.READ_PHONE_STATE)
-                            )
+                            requestPermissionWithSystemFallback(arrayOf(Manifest.permission.READ_PHONE_STATE))
                         }
                     )
 
@@ -3761,117 +3769,6 @@ fun SettingsScreen(
                     }
                 }
             },
-            containerColor = LilacBackground,
-            shape = RoundedCornerShape(18.dp)
-        )
-    }
-
-    pendingPermissionDialog?.let { dialogInfo ->
-        AlertDialog(
-            onDismissRequest = { pendingPermissionDialog = null },
-            icon = {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(LilacPrimary.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.Shield,
-                        contentDescription = null,
-                        tint = LilacPrimary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            },
-            title = {
-                Text(
-                    dialogInfo.title,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = LilacText,
-                    textAlign = TextAlign.Center
-                )
-            },
-            text = {
-                Text(
-                    dialogInfo.description,
-                    fontSize = 11.sp,
-                    color = LilacTextMuted,
-                    lineHeight = 15.sp,
-                    textAlign = TextAlign.Center
-                )
-            },
-            confirmButton = {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable {
-                                val perms = dialogInfo.permissions
-                                pendingPermissionDialog = null
-                                permissionLauncher.launch(perms)
-                            },
-                        shape = RoundedCornerShape(8.dp),
-                        color = LilacPrimary
-                    ) {
-                        Box(
-                            modifier = Modifier.padding(vertical = 6.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("While using the app", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                        }
-                    }
-
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable {
-                                pendingPermissionDialog = null
-                                try {
-                                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                        data = Uri.fromParts("package", context.packageName, null)
-                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    }
-                                    context.startActivity(intent)
-                                } catch (_: Exception) {}
-                            },
-                        shape = RoundedCornerShape(8.dp),
-                        color = LilacBackground,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, LilacBorder)
-                    ) {
-                        Box(
-                            modifier = Modifier.padding(vertical = 6.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Open App Settings", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = LilacText)
-                        }
-                    }
-
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable { pendingPermissionDialog = null },
-                        shape = RoundedCornerShape(8.dp),
-                        color = Color.Transparent
-                    ) {
-                        Box(
-                            modifier = Modifier.padding(vertical = 4.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("Don't allow", fontSize = 11.sp, color = LilacTextMuted)
-                        }
-                    }
-                }
-            },
-            dismissButton = null,
             containerColor = LilacBackground,
             shape = RoundedCornerShape(18.dp)
         )
