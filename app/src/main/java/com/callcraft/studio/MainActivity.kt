@@ -46,11 +46,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.CallMade
-import androidx.compose.material.icons.automirrored.filled.CallMissed
-import androidx.compose.material.icons.automirrored.filled.CallReceived
-import androidx.compose.material.icons.automirrored.filled.PhoneMissed
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -2823,7 +2819,7 @@ fun FakeCallBottomSheet(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Default.VolumeUp, contentDescription = null, tint = LilacPrimary, modifier = Modifier.size(18.dp))
+                            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null, tint = LilacPrimary, modifier = Modifier.size(18.dp))
                             Text("Ringtone Sound", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = LilacText)
                         }
                         Switch(
@@ -3047,12 +3043,14 @@ fun FakeActiveCallScreen(
     var elapsedSeconds by remember { mutableStateOf(0L) }
     var isMuted by remember { mutableStateOf(false) }
     var isSpeakerOn by remember { mutableStateOf(false) }
+    var isHold by remember { mutableStateOf(false) }
+    var isRecording by remember { mutableStateOf(false) }
     var isKeypadOpen by remember { mutableStateOf(false) }
     var dialedDigits by remember { mutableStateOf("") }
     var isNearEar by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        while (true) {
+    LaunchedEffect(isHold) {
+        while (!isHold) {
             kotlinx.coroutines.delay(1000)
             elapsedSeconds++
         }
@@ -3078,8 +3076,8 @@ fun FakeActiveCallScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFF0F0E13))
-                .padding(horizontal = 24.dp, vertical = 36.dp)
+                .background(Color(0xFF121214))
+                .padding(horizontal = 24.dp, vertical = 32.dp)
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -3097,7 +3095,7 @@ fun FakeActiveCallScreen(
                         modifier = Modifier.padding(bottom = 12.dp)
                     ) {
                         Text(
-                            text = "SIM $simSlot • HD Audio",
+                            text = "SIM $simSlot • HD",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFD0BCFF),
@@ -3105,26 +3103,47 @@ fun FakeActiveCallScreen(
                         )
                     }
 
+                    // Contact Avatar
+                    Box(
+                        modifier = Modifier
+                            .size(76.dp)
+                            .clip(CircleShape)
+                            .background(
+                                Brush.radialGradient(
+                                    listOf(LilacPrimary, LilacPrimaryDark)
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = callerName.take(1).uppercase(),
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Black,
+                            color = Color.White
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+
                     Text(
                         text = callerName,
                         fontSize = 24.sp,
-                        fontWeight = FontWeight.Black,
+                        fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = callerNumber,
-                        fontSize = 14.sp,
+                        fontSize = 13.sp,
                         color = Color(0xFFCAC4D0)
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     val mins = elapsedSeconds / 60
                     val secs = elapsedSeconds % 60
                     Text(
-                        text = String.format("%02d:%02d", mins, secs),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color(0xFF10B981)
+                        text = if (isHold) "Call on hold" else String.format("%02d:%02d", mins, secs),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isHold) Color(0xFFFBBF24) else Color(0xFFC4C7C5)
                     )
                 }
 
@@ -3186,12 +3205,13 @@ fun FakeActiveCallScreen(
                         }
                     }
                 } else {
-                    // Action Grid (Mute, Keypad, Speaker, Hold)
+                    // Google Phone Authentic 6-Button Grid (2 rows x 3 columns)
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp),
                         modifier = Modifier.padding(horizontal = 16.dp)
                     ) {
+                        // Row 1: Mute, Keypad, Speaker
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
@@ -3254,20 +3274,89 @@ fun FakeActiveCallScreen(
                                 Text("Speaker", fontSize = 11.sp, color = Color(0xFFCAC4D0))
                             }
                         }
+
+                        // Row 2: Add call, Hold, Record
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            // Add call
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(56.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(0xFF2B2930))
+                                        .clickable { /* Add call */ },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = "Add call", tint = Color.White, modifier = Modifier.size(24.dp))
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text("Add call", fontSize = 11.sp, color = Color(0xFFCAC4D0))
+                            }
+
+                            // Hold
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(56.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isHold) Color(0xFFFBBF24) else Color(0xFF2B2930))
+                                        .clickable { isHold = !isHold },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.Pause,
+                                        contentDescription = "Hold",
+                                        tint = if (isHold) Color.Black else Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(if (isHold) "Unhold" else "Hold", fontSize = 11.sp, color = Color(0xFFCAC4D0))
+                            }
+
+                            // Record
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(56.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isRecording) Color(0xFFF43F5E) else Color(0xFF2B2930))
+                                        .clickable { isRecording = !isRecording },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.FiberManualRecord,
+                                        contentDescription = "Record",
+                                        tint = if (isRecording) Color.White else Color(0xFFF43F5E),
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(if (isRecording) "Recording" else "Record", fontSize = 11.sp, color = Color(0xFFCAC4D0))
+                            }
+                        }
                     }
                 }
 
-                // Bottom End Call
+                // Bottom End Call (Authentic Google Phone prominent red circle)
                 Box(
                     modifier = Modifier
-                        .padding(bottom = 20.dp)
+                        .padding(bottom = 24.dp)
                         .size(68.dp)
                         .clip(CircleShape)
                         .background(Color(0xFFBA1A1A))
                         .clickable { onEndCall(elapsedSeconds) },
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.CallEnd, contentDescription = "End Call", tint = Color.White, modifier = Modifier.size(32.dp))
+                    Icon(
+                        Icons.Default.CallEnd,
+                        contentDescription = "End Call",
+                        tint = Color.White,
+                        modifier = Modifier.size(34.dp)
+                    )
                 }
             }
         }

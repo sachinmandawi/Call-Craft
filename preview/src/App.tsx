@@ -25,7 +25,9 @@ import {
   MicOff,
   Volume2,
   VolumeX,
-  History
+  History,
+  Pause,
+  Disc
 } from 'lucide-react';
 
 export type CallType = 1 | 2 | 3 | 5; // 1: Incoming, 2: Outgoing, 3: Missed, 5: Rejected
@@ -335,6 +337,8 @@ export default function App() {
   const [dialedDigits, setDialedDigits] = useState('');
   const [isMuted, setIsMuted] = useState(false);
   const [isSpeakerOn, setIsSpeakerOn] = useState(false);
+  const [isHold, setIsHold] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
 
   // Form State
   const [formName, setFormName] = useState('');
@@ -417,6 +421,8 @@ export default function App() {
       setFakeCallElapsedSec(0);
       setIsKeypadOpen(false);
       setDialedDigits('');
+      setIsHold(false);
+      setIsRecording(false);
     }
     return () => clearInterval(interval);
   }, [fakeCallState]);
@@ -1902,43 +1908,44 @@ export default function App() {
 
         {/* Fake Incoming Call Fullscreen Screen */}
         {fakeCallState === 'incoming' && (
-          <div className="absolute inset-0 bg-gradient-to-b from-[#1C1B1F] via-[#2B2930] to-[#121214] text-white z-[60] flex flex-col justify-between p-8 animate-in fade-in zoom-in-95 duration-200 select-none">
+          <div className="absolute inset-0 bg-[#121214] text-white z-[60] flex flex-col justify-between p-8 animate-in fade-in zoom-in-95 duration-200 select-none">
             {/* Top Status & SIM */}
-            <div className="flex flex-col items-center pt-8 space-y-2">
-              <div className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-[11px] font-bold text-white/80 flex items-center gap-1.5 border border-white/10">
-                <Smartphone className="w-3.5 h-3.5 text-amber-400" />
-                <span>Incoming Call • SIM {fakeCallSimSlot}</span>
+            <div className="flex flex-col items-center pt-6 space-y-2">
+              <div className="px-3.5 py-1 rounded-full bg-white/10 text-[11px] font-medium text-white/90 flex items-center gap-1.5 border border-white/10">
+                <Smartphone className="w-3.5 h-3.5 text-[#D0BCFF]" />
+                <span>Incoming call • SIM {fakeCallSimSlot}</span>
               </div>
 
-              <div className="text-center pt-4">
-                <h2 className="text-3xl font-black tracking-tight text-white">{fakeCallName}</h2>
-                <p className="text-sm font-mono text-white/70 mt-1">{fakeCallNumber}</p>
+              <div className="text-center pt-3">
+                <h2 className="text-2xl font-bold tracking-tight text-white">{fakeCallName}</h2>
+                <p className="text-xs text-[#CAC4D0] font-mono mt-1">{fakeCallNumber}</p>
               </div>
             </div>
 
             {/* Center Avatar with Pulsing Rings */}
-            <div className="flex items-center justify-center py-6">
+            <div className="flex items-center justify-center py-4">
               <div className="relative flex items-center justify-center">
-                <div className="absolute w-44 h-44 rounded-full bg-[#6750A4]/25 animate-ping duration-1000" />
-                <div className="absolute w-36 h-36 rounded-full bg-amber-500/20 animate-pulse" />
-                <div className="relative w-28 h-28 rounded-full bg-gradient-to-tr from-[#6750A4] to-amber-500 flex items-center justify-center text-4xl font-black text-white shadow-2xl border-2 border-white/30">
+                <div className="absolute w-40 h-40 rounded-full bg-white/5 animate-ping duration-1000" />
+                <div className="absolute w-32 h-32 rounded-full bg-white/10 animate-pulse" />
+                <div className="relative w-24 h-24 rounded-full bg-gradient-to-tr from-[#6750A4] to-[#4F378B] flex items-center justify-center text-4xl font-black text-white shadow-2xl border-2 border-white/20">
                   {fakeCallName.slice(0, 1).toUpperCase()}
                 </div>
               </div>
             </div>
 
             {/* Bottom Actions: Decline and Answer */}
-            <div className="pb-8 space-y-4">
+            <div className="pb-6">
               <div className="flex items-center justify-around px-4">
                 {/* Decline */}
                 <div className="flex flex-col items-center gap-2">
                   <button
                     onClick={() => setFakeCallState('idle')}
-                    className="w-16 h-16 rounded-full bg-[#F43F5E] hover:bg-rose-600 flex items-center justify-center text-white shadow-xl transform active:scale-90 transition"
+                    style={{ width: '64px', height: '64px' }}
+                    className="rounded-full bg-[#BA1A1A] hover:bg-[#DC2626] flex items-center justify-center text-white shadow-xl shadow-red-950/50 transform active:scale-90 transition"
                   >
-                    <PhoneOff className="w-7 h-7" />
+                    <Phone className="w-7 h-7 fill-white text-white rotate-[135deg]" />
                   </button>
-                  <span className="text-xs font-bold text-white/80">Decline</span>
+                  <span className="text-xs font-medium text-[#CAC4D0]">Decline</span>
                 </div>
 
                 {/* Answer */}
@@ -1948,41 +1955,55 @@ export default function App() {
                       setFakeCallState('active');
                       setFakeCallElapsedSec(0);
                     }}
-                    className="w-16 h-16 rounded-full bg-[#10B981] hover:bg-emerald-600 flex items-center justify-center text-white shadow-xl transform active:scale-90 transition animate-bounce"
+                    style={{ width: '64px', height: '64px' }}
+                    className="rounded-full bg-[#1E8E3E] hover:bg-emerald-600 flex items-center justify-center text-white shadow-xl shadow-emerald-950/50 transform active:scale-90 transition animate-bounce"
                   >
-                    <Phone className="w-7 h-7 fill-white" />
+                    <Phone className="w-7 h-7 fill-white text-white" />
                   </button>
-                  <span className="text-xs font-bold text-white/80">Answer</span>
+                  <span className="text-xs font-medium text-[#CAC4D0]">Answer</span>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Fake Active In-Call Fullscreen Screen */}
+        {/* Authentic Google Phone In-Call Screen */}
         {fakeCallState === 'active' && (
-          <div className="absolute inset-0 bg-gradient-to-b from-[#1C1B1F] via-[#24222A] to-[#121214] text-white z-[60] flex flex-col justify-between p-6 animate-in fade-in duration-150 select-none">
-            {/* Top Header */}
+          <div className="absolute inset-0 bg-[#121214] text-white z-[60] flex flex-col justify-between p-6 animate-in fade-in duration-150 select-none">
+            {/* Top Contact Info */}
             <div className="flex flex-col items-center pt-6 space-y-1">
-              <div className="px-2.5 py-0.5 rounded-full bg-white/10 text-[10px] font-bold text-white/70 flex items-center gap-1">
-                <Smartphone className="w-3 h-3 text-emerald-400" />
-                <span>SIM {fakeCallSimSlot}</span>
+              <div className="px-3 py-0.5 rounded-full bg-white/10 text-[11px] font-medium text-white/80 flex items-center gap-1.5 mb-2">
+                <Smartphone className="w-3 h-3 text-[#D0BCFF]" />
+                <span>SIM {fakeCallSimSlot} • HD</span>
               </div>
-              <h2 className="text-2xl font-black text-white">{fakeCallName}</h2>
-              <p className="text-xs font-mono text-white/60">{fakeCallNumber}</p>
-              <div className="text-sm font-black font-mono text-emerald-400 pt-1 tracking-wider">
-                {formatDuration(fakeCallElapsedSec)}
+
+              {/* Large Contact Avatar */}
+              <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#6750A4] to-[#4F378B] flex items-center justify-center text-3xl font-black text-white shadow-lg border border-white/10 mb-2">
+                {fakeCallName.slice(0, 1).toUpperCase()}
               </div>
-              {dialedDigits && (
-                <div className="text-xs font-mono text-amber-400 bg-black/40 px-3 py-1 rounded-full mt-1">
-                  Dialed: {dialedDigits}
-                </div>
-              )}
+
+              <h2 className="text-2xl font-bold tracking-tight text-white">{fakeCallName}</h2>
+              <p className="text-xs text-[#CAC4D0] font-mono">{fakeCallNumber}</p>
+
+              {/* Duration Timer or Status */}
+              <div className="text-sm font-medium text-[#C4C7C5] pt-1">
+                {isHold ? (
+                  <span className="text-amber-400 font-bold">Call on hold</span>
+                ) : (
+                  formatDuration(fakeCallElapsedSec)
+                )}
+              </div>
             </div>
 
-            {/* Center: DTMF Keypad or In-Call Grid */}
+            {/* Center: DTMF Keypad or Authentic 6-Button Grid */}
             {isKeypadOpen ? (
-              <div className="bg-black/30 backdrop-blur-md rounded-3xl p-3 border border-white/10 my-auto">
+              <div className="bg-[#1E1F22] rounded-[32px] p-4 border border-white/10 my-auto shadow-2xl">
+                <div className="text-center pb-2">
+                  <div className="text-xl font-bold font-mono tracking-widest text-white h-7">
+                    {dialedDigits || <span className="text-white/30 text-sm">Keypad</span>}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-3 gap-2.5 max-w-[260px] mx-auto">
                   {[
                     { d: '1', sub: '' },
@@ -2006,7 +2027,7 @@ export default function App() {
                         }
                         setDialedDigits((prev) => prev + k.d);
                       }}
-                      className="h-13 rounded-2xl bg-white/10 hover:bg-white/20 active:bg-[#6750A4] flex flex-col items-center justify-center transition"
+                      className="h-13 rounded-2xl bg-[#2B2930] hover:bg-[#3B383E] active:bg-[#6750A4] flex flex-col items-center justify-center transition"
                     >
                       <span className="text-lg font-black leading-none">{k.d}</span>
                       {k.sub && <span className="text-[8px] font-bold text-white/50">{k.sub}</span>}
@@ -2015,79 +2036,109 @@ export default function App() {
                 </div>
                 <button
                   onClick={() => setIsKeypadOpen(false)}
-                  className="mt-3 w-full py-1.5 text-xs font-bold text-white/70 hover:text-white bg-white/5 rounded-xl transition"
+                  className="mt-3 w-full py-2 text-xs font-bold text-[#D0BCFF] hover:text-white bg-white/5 rounded-xl transition"
                 >
                   Hide Keypad
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-4 px-4 my-auto">
-                {/* Mute */}
-                <button
-                  onClick={() => setIsMuted(!isMuted)}
-                  className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl transition ${
-                    isMuted ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/15'
-                  }`}
-                >
-                  {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
-                  <span className="text-[11px] font-bold">{isMuted ? 'Muted' : 'Mute'}</span>
-                </button>
+              <div className="grid grid-cols-3 gap-y-5 gap-x-4 px-3 my-auto">
+                {/* 1. Mute */}
+                <div className="flex flex-col items-center gap-1.5">
+                  <button
+                    onClick={() => setIsMuted(!isMuted)}
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center transition shadow-sm ${
+                      isMuted
+                        ? 'bg-white text-black'
+                        : 'bg-[#2B2930] text-[#E6E1E5] hover:bg-[#36343B]'
+                    }`}
+                  >
+                    {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+                  </button>
+                  <span className="text-[11px] font-medium text-[#CAC4D0]">
+                    {isMuted ? 'Unmute' : 'Mute'}
+                  </span>
+                </div>
 
-                {/* Keypad */}
-                <button
-                  onClick={() => setIsKeypadOpen(true)}
-                  className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-white/10 text-white hover:bg-white/15 transition"
-                >
-                  <div className="w-6 h-6 grid grid-cols-3 gap-0.5 items-center justify-center">
-                    {Array.from({ length: 9 }).map((_, i) => (
-                      <span key={i} className="w-1 h-1 bg-white rounded-full mx-auto" />
-                    ))}
-                  </div>
-                  <span className="text-[11px] font-bold">Keypad</span>
-                </button>
+                {/* 2. Keypad */}
+                <div className="flex flex-col items-center gap-1.5">
+                  <button
+                    onClick={() => setIsKeypadOpen(true)}
+                    className="w-14 h-14 rounded-2xl bg-[#2B2930] text-[#E6E1E5] hover:bg-[#36343B] flex items-center justify-center transition shadow-sm"
+                  >
+                    <div className="w-5 h-5 grid grid-cols-3 gap-0.5 items-center justify-center">
+                      {Array.from({ length: 9 }).map((_, i) => (
+                        <span key={i} className="w-1 h-1 bg-[#E6E1E5] rounded-full mx-auto" />
+                      ))}
+                    </div>
+                  </button>
+                  <span className="text-[11px] font-medium text-[#CAC4D0]">Keypad</span>
+                </div>
 
-                {/* Speaker */}
-                <button
-                  onClick={() => setIsSpeakerOn(!isSpeakerOn)}
-                  className={`flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl transition ${
-                    isSpeakerOn ? 'bg-white text-black' : 'bg-white/10 text-white hover:bg-white/15'
-                  }`}
-                >
-                  {isSpeakerOn ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
-                  <span className="text-[11px] font-bold">Speaker</span>
-                </button>
+                {/* 3. Speaker */}
+                <div className="flex flex-col items-center gap-1.5">
+                  <button
+                    onClick={() => setIsSpeakerOn(!isSpeakerOn)}
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center transition shadow-sm ${
+                      isSpeakerOn
+                        ? 'bg-white text-black'
+                        : 'bg-[#2B2930] text-[#E6E1E5] hover:bg-[#36343B]'
+                    }`}
+                  >
+                    {isSpeakerOn ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
+                  </button>
+                  <span className="text-[11px] font-medium text-[#CAC4D0]">Speaker</span>
+                </div>
 
-                {/* Add Call (Mock) */}
-                <button
-                  onClick={() => alert('Feature disabled during simulated call')}
-                  className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-white/10 text-white/70 hover:bg-white/15 transition"
-                >
-                  <Plus className="w-6 h-6" />
-                  <span className="text-[11px] font-bold">Add Call</span>
-                </button>
+                {/* 4. Add call */}
+                <div className="flex flex-col items-center gap-1.5">
+                  <button
+                    onClick={() => alert('Add call feature')}
+                    className="w-14 h-14 rounded-2xl bg-[#2B2930] text-[#E6E1E5] hover:bg-[#36343B] flex items-center justify-center transition shadow-sm"
+                  >
+                    <Plus className="w-6 h-6" />
+                  </button>
+                  <span className="text-[11px] font-medium text-[#CAC4D0]">Add call</span>
+                </div>
 
-                {/* Hold (Mock) */}
-                <button
-                  onClick={() => alert('Call placed on hold')}
-                  className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-white/10 text-white/70 hover:bg-white/15 transition"
-                >
-                  <Clock className="w-6 h-6" />
-                  <span className="text-[11px] font-bold">Hold</span>
-                </button>
+                {/* 5. Hold */}
+                <div className="flex flex-col items-center gap-1.5">
+                  <button
+                    onClick={() => setIsHold(!isHold)}
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center transition shadow-sm ${
+                      isHold
+                        ? 'bg-amber-400 text-black'
+                        : 'bg-[#2B2930] text-[#E6E1E5] hover:bg-[#36343B]'
+                    }`}
+                  >
+                    <Pause className="w-6 h-6" />
+                  </button>
+                  <span className="text-[11px] font-medium text-[#CAC4D0]">
+                    {isHold ? 'Unhold' : 'Hold'}
+                  </span>
+                </div>
 
-                {/* Fake Note / Info */}
-                <button
-                  onClick={() => alert('Simulating active voice call on Android')}
-                  className="flex flex-col items-center justify-center gap-1.5 p-3 rounded-2xl bg-white/10 text-white/70 hover:bg-white/15 transition"
-                >
-                  <Zap className="w-6 h-6 text-amber-400" />
-                  <span className="text-[11px] font-bold">Fake Call</span>
-                </button>
+                {/* 6. Record */}
+                <div className="flex flex-col items-center gap-1.5">
+                  <button
+                    onClick={() => setIsRecording(!isRecording)}
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center transition shadow-sm ${
+                      isRecording
+                        ? 'bg-rose-500 text-white'
+                        : 'bg-[#2B2930] text-[#E6E1E5] hover:bg-[#36343B]'
+                    }`}
+                  >
+                    <Disc className={`w-6 h-6 ${isRecording ? 'animate-spin' : ''}`} />
+                  </button>
+                  <span className="text-[11px] font-medium text-[#CAC4D0]">
+                    {isRecording ? 'Recording' : 'Record'}
+                  </span>
+                </div>
               </div>
             )}
 
-            {/* Bottom End Call */}
-            <div className="pb-6 flex justify-center">
+            {/* Bottom End Call (Prominent Google Phone Red Circle) */}
+            <div className="pb-8 flex justify-center">
               <button
                 onClick={() => {
                   if (fakeCallSaveToLog) {
@@ -2105,10 +2156,14 @@ export default function App() {
                   setFakeCallState('idle');
                   setIsKeypadOpen(false);
                   setDialedDigits('');
+                  setIsHold(false);
+                  setIsRecording(false);
                 }}
-                className="w-18 h-18 rounded-full bg-[#F43F5E] hover:bg-rose-600 flex items-center justify-center text-white shadow-2xl transform active:scale-95 transition"
+                style={{ width: '68px', height: '68px' }}
+                className="rounded-full bg-[#BA1A1A] hover:bg-[#DC2626] flex items-center justify-center text-white shadow-xl shadow-red-950/50 transform active:scale-95 transition-all"
+                title="End Call"
               >
-                <PhoneOff className="w-8 h-8" />
+                <Phone className="w-8 h-8 fill-white text-white rotate-[135deg]" />
               </button>
             </div>
           </div>
