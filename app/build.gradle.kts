@@ -16,6 +16,13 @@ android {
         versionName = "1.0.0"
     }
 
+    applicationVariants.all {
+        outputs.all {
+            val outputImpl = this as? com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            outputImpl?.outputFileName = "CallCraft-v${versionName}.apk"
+        }
+    }
+
     buildFeatures {
         compose = true
     }

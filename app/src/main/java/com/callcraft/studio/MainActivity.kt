@@ -3467,55 +3467,23 @@ fun FakeIncomingCallScreen(
             }
         }
         "ios" -> {
-            // Apple iPhone 18 Pro (iOS) Authentic Incoming Screen
+            // Apple iPhone iOS Authentic Incoming Screen
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black)
                     .statusBarsPadding()
                     .navigationBarsPadding()
-                    .padding(horizontal = 24.dp, vertical = 20.dp)
+                    .padding(horizontal = 24.dp, vertical = 24.dp)
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // iPhone Pro Dynamic Island Pill
-                    Surface(
-                        shape = CircleShape,
-                        color = Color.Black,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
-                        modifier = Modifier.padding(top = 4.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .width(125.dp)
-                                .height(32.dp)
-                                .padding(horizontal = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(10.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF1A1A1A))
-                                    .border(0.5.dp, Color.White.copy(alpha = 0.1f), CircleShape)
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .size(10.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF0D1B2A))
-                                    .border(0.5.dp, Color(0xFF38BDF8).copy(alpha = 0.3f), CircleShape)
-                            )
-                        }
-                    }
-
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(top = 4.dp)
+                        modifier = Modifier.padding(top = 28.dp)
                     ) {
                         Text(
                             text = callerName,
@@ -3885,51 +3853,8 @@ fun FakeActiveCallScreen(
                     "ios" -> {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.padding(top = 4.dp)
+                            modifier = Modifier.padding(top = 20.dp)
                         ) {
-                            // iPhone Pro Active Dynamic Island with Live Call Waveform
-                            Surface(
-                                shape = CircleShape,
-                                color = Color.Black,
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
-                                modifier = Modifier.padding(bottom = 14.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .width(160.dp)
-                                        .height(34.dp)
-                                        .padding(horizontal = 12.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        Icon(
-                                            Icons.Default.Call,
-                                            contentDescription = null,
-                                            tint = Color(0xFF34C759),
-                                            modifier = Modifier.size(13.dp)
-                                        )
-                                        Text(
-                                            text = formattedDuration,
-                                            fontSize = 11.sp,
-                                            fontWeight = FontWeight.Medium,
-                                            color = Color(0xFF34C759)
-                                        )
-                                    }
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Box(modifier = Modifier.width(2.dp).height(10.dp).background(Color(0xFF34C759), CircleShape))
-                                        Box(modifier = Modifier.width(2.dp).height(16.dp).background(Color(0xFF34C759), CircleShape))
-                                        Box(modifier = Modifier.width(2.dp).height(12.dp).background(Color(0xFF34C759), CircleShape))
-                                    }
-                                }
-                            }
-
                             Text(text = callerName, fontSize = 28.sp, fontWeight = FontWeight.Light, color = Color.White)
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(

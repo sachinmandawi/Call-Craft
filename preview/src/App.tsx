@@ -2066,17 +2066,9 @@ export default function App() {
                 </div>
               </div>
             ) : fakeCallBrand === 'ios' ? (
-              // Apple iPhone 18 Pro (iOS) Authentic Incoming Screen
-              <div className="absolute inset-0 bg-black text-white z-[60] flex flex-col justify-between p-6 select-none animate-in fade-in duration-200">
-                {/* iPhone Pro Dynamic Island */}
-                <div className="flex justify-center pt-1">
-                  <div className="w-[125px] h-[32px] bg-black rounded-full border border-white/10 shadow-lg flex items-center justify-between px-3">
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-white/5" />
-                    <div className="w-2.5 h-2.5 rounded-full bg-[#0D1B2A] border border-blue-500/20" />
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-center pt-2 text-center space-y-1">
+              // Apple iPhone iOS Authentic Incoming Screen
+              <div className="absolute inset-0 bg-black text-white z-[60] flex flex-col justify-between p-7 select-none animate-in fade-in duration-200">
+                <div className="flex flex-col items-center pt-10 text-center space-y-1">
                   <h2 className="text-[30px] font-light text-white tracking-tight">{fakeCallName}</h2>
                   <p className="text-sm text-[#8E8E93] font-normal">mobile • {fakeCallNumber}</p>
                 </div>
@@ -2226,19 +2218,7 @@ export default function App() {
                 </div>
               </div>
             ) : fakeCallBrand === 'ios' ? (
-              <div className="flex flex-col items-center pt-1 space-y-1">
-                {/* iPhone Pro Dynamic Island Active Call Waveform */}
-                <div className="w-[160px] h-[34px] bg-black rounded-full border border-white/10 shadow-lg flex items-center justify-between px-3 mb-3">
-                  <div className="flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 fill-[#34C759] text-[#34C759]" />
-                    <span className="text-[11px] font-mono text-[#34C759] font-medium">{formatCallTimer(fakeCallElapsedSec)}</span>
-                  </div>
-                  <div className="flex items-center gap-0.5">
-                    <span className="w-0.5 h-2.5 bg-[#34C759] rounded-full animate-pulse" />
-                    <span className="w-0.5 h-4 bg-[#34C759] rounded-full animate-bounce" />
-                    <span className="w-0.5 h-3 bg-[#34C759] rounded-full animate-pulse" />
-                  </div>
-                </div>
+              <div className="flex flex-col items-center pt-8 space-y-1">
                 <h2 className="text-[28px] font-light text-white tracking-tight">{fakeCallName}</h2>
                 <div className="text-sm text-[#8E8E93] font-normal pt-0.5">
                   {isHold ? <span className="text-amber-400 font-semibold">call on hold</span> : formatCallTimer(fakeCallElapsedSec)}
