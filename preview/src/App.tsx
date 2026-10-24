@@ -36,7 +36,8 @@ import {
   Bug,
   Download,
   RefreshCw,
-  Sparkles
+  Sparkles,
+  Mail
 } from 'lucide-react';
 
 export type CallType = 1 | 2 | 3 | 5; // 1: Incoming, 2: Outgoing, 3: Missed, 5: Rejected
@@ -312,6 +313,13 @@ export default function App() {
   const [hasContactsPermission, setHasContactsPermission] = useState(true);
   const [hasPhoneStatePermission, setHasPhoneStatePermission] = useState(true);
   const [toastState, setToastState] = useState<{ message: string; isExiting: boolean } | null>(null);
+  const [pendingPermissionDialog, setPendingPermissionDialog] = useState<{
+    type: 'call_log' | 'contacts' | 'phone_state';
+    title: string;
+    description: string;
+    icon: React.ElementType;
+  } | null>(null);
+  const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'latest' | 'available' | 'error'>('idle');
   const [latestReleaseInfo, setLatestReleaseInfo] = useState<{ version: string; url: string; notes: string } | null>(null);
 
@@ -377,6 +385,29 @@ export default function App() {
   const hasSim1 = simHardwareMode === 'dual' || simHardwareMode === 'sim1_only';
   const hasSim2 = simHardwareMode === 'dual' || simHardwareMode === 'sim2_only';
   const defaultSlot: 1 | 2 = hasSim1 ? 1 : 2;
+
+  const diagnosticLogs = useMemo(() => [
+    `[INFO] CallCraft v1.0.0 (Production Release) active`,
+    `[INFO] Platform: Pixel 8 Pro (Simulated Android 15 / API 35)`,
+    `[INFO] Dialer Role: ${isDialerRoleGranted ? 'Granted' : 'Not Granted'}`,
+    `[INFO] Permissions: CallLogs=${hasCallLogPermission}, Contacts=${hasContactsPermission}, Phone=${hasPhoneStatePermission}`,
+    `[INFO] Hardware: ${simHardwareMode} (SIM1: ${hasSim1}, SIM2: ${hasSim2})`,
+    `[INFO] GitHub Release API: Connected (HTTP 200 OK Public)`,
+    `[INFO] Call Records In Memory: ${logs.length} calls loaded into database`,
+    `[DIAGNOSTIC] Zero unhandled exceptions recorded`,
+  ], [isDialerRoleGranted, hasCallLogPermission, hasContactsPermission, hasPhoneStatePermission, simHardwareMode, hasSim1, hasSim2, logs.length]);
+
+  const copyDiagnosticLogs = () => {
+    const text = diagnosticLogs.join('\n');
+    navigator.clipboard?.writeText(text);
+    showToast('Diagnostics copied to clipboard');
+  };
+
+  const generateLogMailto = () => {
+    const subject = encodeURIComponent('CallCraft v1.0.0 - Diagnostic Bug Report');
+    const bodyText = `Hi Sachin,\n\nHere is my CallCraft diagnostic log report:\n\n--- APP DIAGNOSTICS ---\n${diagnosticLogs.join('\n')}\n\n--- ISSUE DESCRIPTION ---\nPlease describe the issue or attach details here:\n`;
+    return `mailto:sachinmandawi@gmail.com?subject=${subject}&body=${encodeURIComponent(bodyText)}`;
+  };
 
   // Multi-Select States
   const [isSelectionMode, setIsSelectionMode] = useState(false);
@@ -1154,67 +1185,73 @@ export default function App() {
             </div>
 
             {/* SCREEN 2: SETTINGS */}
-            <div className="w-full h-full shrink-0 flex flex-col overflow-y-auto no-scrollbar px-4 py-4 space-y-4">
+            <div className="w-full h-full shrink-0 flex flex-col overflow-y-auto no-scrollbar px-3.5 py-3 space-y-2.5">
               {/* Header */}
-              <div className="flex items-center gap-3 pb-2 border-b border-[#E7E0EC] shrink-0">
+              <div className="flex items-center gap-2.5 pb-2 border-b border-[#E7E0EC] shrink-0">
                 <button
                   onClick={() => setCurrentScreen('recents')}
-                  className="p-2 -ml-2 rounded-full hover:bg-black/5 text-[#1D1B20] transition"
+                  className="p-1.5 -ml-1 rounded-full hover:bg-black/5 text-[#1D1B20] transition"
                 >
-                  <ArrowLeft className="w-5 h-5" />
+                  <ArrowLeft className="w-4 h-4" />
                 </button>
                 <div>
-                  <h2 className="text-lg font-black text-[#1D1B20]">Settings</h2>
-                  <p className="text-[11px] text-[#6750A4] font-semibold">Preferences, System & Diagnostics</p>
+                  <h2 className="text-base font-black text-[#1D1B20]">Settings</h2>
+                  <p className="text-[10px] text-[#6750A4] font-semibold">Preferences, System & Diagnostics</p>
                 </div>
               </div>
 
-
               {/* SECTION 1: PERMISSIONS & SYSTEM DIAGNOSTICS */}
-              <div className="space-y-2">
-                <span className="text-[11px] font-bold text-[#6750A4] uppercase tracking-wider px-1 block">
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold text-[#6750A4] uppercase tracking-wider px-1 block">
                   System & Permissions
                 </span>
 
-                <div className="bg-[#FEF7FF] rounded-[20px] p-4 border border-[#E7E0EC] shadow-xs space-y-3">
+                <div className="bg-[#FEF7FF] rounded-[16px] p-2.5 border border-[#E7E0EC] shadow-xs space-y-2">
                   {/* Item 1: Dialer Role */}
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <ShieldCheck className={`w-5 h-5 shrink-0 ${isDialerRoleGranted ? 'text-[#10B981]' : 'text-[#6750A4]'}`} />
-                      <span className="text-sm font-semibold text-[#1D1B20]">Default Dialer Role</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <ShieldCheck className={`w-4 h-4 shrink-0 ${isDialerRoleGranted ? 'text-[#10B981]' : 'text-[#6750A4]'}`} />
+                      <span className="text-xs font-semibold text-[#1D1B20]">Default Dialer Role</span>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => setIsDialerRoleGranted(!isDialerRoleGranted)}
-                      style={{ width: '44px', height: '26px' }}
+                      style={{ width: '38px', height: '22px' }}
                       className={`relative inline-flex shrink-0 items-center rounded-full p-0.5 transition-colors duration-300 ${
                         isDialerRoleGranted ? 'bg-[#6750A4]' : 'bg-[#ECE6F0] border border-[#E7E0EC]'
                       }`}
                     >
                       <span
-                        className={`pointer-events-none inline-flex h-5 w-5 transform items-center justify-center rounded-full bg-white shadow-md transition duration-300 ${
+                        className={`pointer-events-none inline-flex h-4 w-4 transform items-center justify-center rounded-full bg-white shadow-md transition duration-300 ${
                           isDialerRoleGranted ? 'translate-x-4' : 'translate-x-0'
                         }`}
                       >
-                        {isDialerRoleGranted && <Check className="w-3 h-3 text-[#6750A4] stroke-[3]" />}
+                        {isDialerRoleGranted && <Check className="w-2.5 h-2.5 text-[#6750A4] stroke-[3]" />}
                       </span>
                     </button>
                   </div>
 
-                  <div className="h-px bg-[#E7E0EC]/50" />
+                  <div className="h-px bg-[#E7E0EC]/40" />
 
                   {/* Item 2: Call Log Access */}
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs font-medium text-[#1D1B20]">Call Logs Access</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-medium text-[#1D1B20]">Call Logs Access</span>
                     {hasCallLogPermission ? (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#10B981]/15 text-[#10B981] text-[10px] font-bold">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] text-[9px] font-bold">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" /> Granted
                       </span>
                     ) : (
                       <button
-                        onClick={() => setHasCallLogPermission(true)}
-                        className="px-2 py-0.5 rounded-md bg-[#F59E0B] text-white text-[10px] font-bold"
+                        onClick={() =>
+                          setPendingPermissionDialog({
+                            type: 'call_log',
+                            title: 'Allow CallCraft to access your call logs?',
+                            description: 'CallCraft needs call log access to view, edit, and organize your call history.',
+                            icon: PhoneIncoming,
+                          })
+                        }
+                        className="px-2.5 py-0.5 rounded-full bg-[#6750A4] hover:bg-[#553F8D] text-white text-[9px] font-bold shadow-xs active:scale-95 transition"
                       >
                         Grant
                       </button>
@@ -1222,16 +1259,23 @@ export default function App() {
                   </div>
 
                   {/* Item 3: Contacts Access */}
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs font-medium text-[#1D1B20]">Contacts Access</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-medium text-[#1D1B20]">Contacts Access</span>
                     {hasContactsPermission ? (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#10B981]/15 text-[#10B981] text-[10px] font-bold">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] text-[9px] font-bold">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" /> Granted
                       </span>
                     ) : (
                       <button
-                        onClick={() => setHasContactsPermission(true)}
-                        className="px-2 py-0.5 rounded-md bg-[#F59E0B] text-white text-[10px] font-bold"
+                        onClick={() =>
+                          setPendingPermissionDialog({
+                            type: 'contacts',
+                            title: 'Allow CallCraft to access your contacts?',
+                            description: 'CallCraft needs contacts access to show contact names and photos.',
+                            icon: Users,
+                          })
+                        }
+                        className="px-2.5 py-0.5 rounded-full bg-[#6750A4] hover:bg-[#553F8D] text-white text-[9px] font-bold shadow-xs active:scale-95 transition"
                       >
                         Grant
                       </button>
@@ -1239,16 +1283,23 @@ export default function App() {
                   </div>
 
                   {/* Item 4: Phone State Access */}
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs font-medium text-[#1D1B20]">Phone State Access</span>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] font-medium text-[#1D1B20]">Phone State Access</span>
                     {hasPhoneStatePermission ? (
-                      <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#10B981]/15 text-[#10B981] text-[10px] font-bold">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#10B981]/15 text-[#10B981] text-[9px] font-bold">
                         <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" /> Granted
                       </span>
                     ) : (
                       <button
-                        onClick={() => setHasPhoneStatePermission(true)}
-                        className="px-2 py-0.5 rounded-md bg-[#F59E0B] text-white text-[10px] font-bold"
+                        onClick={() =>
+                          setPendingPermissionDialog({
+                            type: 'phone_state',
+                            title: 'Allow CallCraft to make and manage phone calls?',
+                            description: 'CallCraft needs phone state access to detect incoming and outgoing calls in real time.',
+                            icon: Phone,
+                          })
+                        }
+                        className="px-2.5 py-0.5 rounded-full bg-[#6750A4] hover:bg-[#553F8D] text-white text-[9px] font-bold shadow-xs active:scale-95 transition"
                       >
                         Grant
                       </button>
@@ -1257,7 +1308,7 @@ export default function App() {
 
                   <button
                     onClick={() => triggerCopy('Settings', 'Opened System Settings')}
-                    className="w-full text-center text-xs font-semibold text-[#6750A4] pt-1 hover:underline transition"
+                    className="w-full text-center text-[11px] font-semibold text-[#6750A4] pt-0.5 hover:underline transition"
                   >
                     Open System App Settings
                   </button>
@@ -1265,70 +1316,70 @@ export default function App() {
               </div>
 
               {/* SECTION 2: DEVELOPER & COMMUNITY */}
-              <div className="space-y-2">
-                <span className="text-[11px] font-bold text-[#6750A4] uppercase tracking-wider px-1 block">
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold text-[#6750A4] uppercase tracking-wider px-1 block">
                   Developer & Community
                 </span>
 
-                <div className="bg-[#FEF7FF] rounded-[20px] p-3.5 border border-[#E7E0EC] shadow-xs space-y-2.5">
+                <div className="bg-[#FEF7FF] rounded-[16px] p-2.5 border border-[#E7E0EC] shadow-xs space-y-1.5">
                   {/* Sachin Mandawi Profile (Real Avatar) */}
                   <a
                     href="https://github.com/sachinmandawi"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-3 group text-left hover:opacity-90 transition py-1"
+                    className="flex items-center justify-between gap-2 group text-left hover:opacity-90 transition py-0.5"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <img
                         src="/sachin_avatar.png"
                         alt="Sachin Mandawi"
-                        className="w-8 h-8 rounded-full object-cover border border-[#E7E0EC] shrink-0"
+                        className="w-7 h-7 rounded-full object-cover border border-[#E7E0EC] shrink-0"
                       />
                       <div className="min-w-0">
-                        <div className="text-xs font-bold text-[#1D1B20]">Sachin Mandawi</div>
-                        <div className="text-[10px] text-[#79747E]">GitHub Profile</div>
+                        <div className="text-[11px] font-bold text-[#1D1B20]">Sachin Mandawi</div>
+                        <div className="text-[9px] text-[#79747E]">GitHub Profile</div>
                       </div>
                     </div>
-                    <ExternalLink className="w-4 h-4 text-[#79747E] group-hover:text-[#6750A4] transition shrink-0" />
+                    <ExternalLink className="w-3.5 h-3.5 text-[#79747E] group-hover:text-[#6750A4] transition shrink-0" />
                   </a>
 
-                  <div className="h-px bg-[#E7E0EC]/50" />
+                  <div className="h-px bg-[#E7E0EC]/40" />
 
                   {/* CallCraft Repository (Real CallCraft Logo) */}
                   <a
                     href="https://github.com/sachinmandawi/Call-Craft"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-3 group text-left hover:opacity-90 transition py-1"
+                    className="flex items-center justify-between gap-2 group text-left hover:opacity-90 transition py-0.5"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <img
                         src="/logo.png"
                         alt="CallCraft"
-                        className="w-8 h-8 rounded-lg object-cover border border-[#E7E0EC] shrink-0"
+                        className="w-7 h-7 rounded-lg object-cover border border-[#E7E0EC] shrink-0"
                       />
                       <div className="min-w-0">
-                        <div className="text-xs font-bold text-[#1D1B20]">CallCraft Repository</div>
-                        <div className="text-[10px] text-[#79747E]">Source code & releases</div>
+                        <div className="text-[11px] font-bold text-[#1D1B20]">CallCraft Repository</div>
+                        <div className="text-[9px] text-[#79747E]">Source code & releases</div>
                       </div>
                     </div>
-                    <ExternalLink className="w-4 h-4 text-[#79747E] group-hover:text-[#6750A4] transition shrink-0" />
+                    <ExternalLink className="w-3.5 h-3.5 text-[#79747E] group-hover:text-[#6750A4] transition shrink-0" />
                   </a>
 
-                  <div className="h-px bg-[#E7E0EC]/50" />
+                  <div className="h-px bg-[#E7E0EC]/40" />
 
                   {/* Contact Developer (Official Gmail Icon) */}
                   <div
                     onClick={() => triggerCopy('Email', 'sachinmandawi@gmail.com')}
-                    className="flex items-center justify-between gap-3 group text-left hover:opacity-90 transition py-1 cursor-pointer"
+                    className="flex items-center justify-between gap-2 group text-left hover:opacity-90 transition py-0.5 cursor-pointer"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-white border border-[#E7E0EC] flex items-center justify-center shrink-0 p-1">
-                        <img src="/gmail_logo.svg" alt="Gmail" className="w-4 h-4 object-contain" />
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-white border border-[#E7E0EC] flex items-center justify-center shrink-0 p-1">
+                        <img src="/gmail_logo.svg" alt="Gmail" className="w-3.5 h-3.5 object-contain" />
                       </div>
                       <div className="min-w-0">
-                        <div className="text-xs font-bold text-[#1D1B20]">Contact Developer</div>
-                        <div className="text-[10px] text-[#79747E]">sachinmandawi@gmail.com</div>
+                        <div className="text-[11px] font-bold text-[#1D1B20]">Contact Developer</div>
+                        <div className="text-[9px] text-[#79747E]">sachinmandawi@gmail.com</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
@@ -1338,48 +1389,48 @@ export default function App() {
                           e.stopPropagation();
                           triggerCopy('Email', 'sachinmandawi@gmail.com');
                         }}
-                        className="p-1.5 rounded-lg text-[#6750A4] hover:bg-[#6750A4]/10 transition"
+                        className="p-1 rounded-lg text-[#6750A4] hover:bg-[#6750A4]/10 transition"
                         title="Copy Email"
                       >
-                        <Copy className="w-4 h-4" />
+                        <Copy className="w-3.5 h-3.5" />
                       </button>
                       <a
                         href="mailto:sachinmandawi@gmail.com?subject=CallCraft%20Inquiry"
                         onClick={(e) => e.stopPropagation()}
-                        className="p-1.5 rounded-lg text-[#79747E] hover:text-[#6750A4] hover:bg-black/5 transition"
+                        className="p-1 rounded-lg text-[#79747E] hover:text-[#6750A4] hover:bg-black/5 transition"
                         title="Send Email"
                       >
-                        <ExternalLink className="w-4 h-4" />
+                        <ExternalLink className="w-3.5 h-3.5" />
                       </a>
                     </div>
                   </div>
 
-                  <div className="h-px bg-[#E7E0EC]/50" />
+                  <div className="h-px bg-[#E7E0EC]/40" />
 
                   {/* Report an Issue */}
                   <a
                     href="https://github.com/sachinmandawi/Call-Craft/issues/new"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-between gap-3 group text-left hover:opacity-90 transition py-1"
+                    className="flex items-center justify-between gap-2 group text-left hover:opacity-90 transition py-0.5"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-[#F43F5E]/10 text-[#F43F5E] flex items-center justify-center shrink-0">
-                        <Bug className="w-4 h-4" />
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-lg bg-[#F43F5E]/10 text-[#F43F5E] flex items-center justify-center shrink-0">
+                        <Bug className="w-3.5 h-3.5" />
                       </div>
                       <div className="min-w-0">
-                        <div className="text-xs font-bold text-[#1D1B20]">Report an Issue</div>
-                        <div className="text-[10px] text-[#79747E]">GitHub Issues</div>
+                        <div className="text-[11px] font-bold text-[#1D1B20]">Report an Issue</div>
+                        <div className="text-[9px] text-[#79747E]">GitHub Issues</div>
                       </div>
                     </div>
-                    <ExternalLink className="w-4 h-4 text-[#79747E] group-hover:text-[#6750A4] transition shrink-0" />
+                    <ExternalLink className="w-3.5 h-3.5 text-[#79747E] group-hover:text-[#6750A4] transition shrink-0" />
                   </a>
                 </div>
               </div>
 
               {/* SECTION 3: OTHER APPS (CleanBar with real logo) */}
-              <div className="space-y-2">
-                <span className="text-[11px] font-bold text-[#6750A4] uppercase tracking-wider px-1 block">
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold text-[#6750A4] uppercase tracking-wider px-1 block">
                   Other Apps
                 </span>
 
@@ -1387,50 +1438,50 @@ export default function App() {
                   href="https://github.com/sachinmandawi/CleanBar"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block bg-[#FEF7FF] rounded-[20px] p-3.5 border border-[#E7E0EC] shadow-xs hover:border-[#6750A4]/40 transition group"
+                  className="block bg-[#FEF7FF] rounded-[16px] p-2.5 border border-[#E7E0EC] shadow-xs hover:border-[#6750A4]/40 transition group"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2.5">
                     <img
                       src="/cleanbar_logo.png"
                       alt="CleanBar"
-                      className="w-9 h-9 rounded-xl object-cover border border-[#E7E0EC] shrink-0"
+                      className="w-8 h-8 rounded-xl object-cover border border-[#E7E0EC] shrink-0"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-[#1D1B20]">CleanBar</span>
-                        <span className="px-1.5 py-0.5 rounded bg-[#E8DEF8] text-[#21005D] text-[9px] font-bold">
+                        <span className="text-[11px] font-bold text-[#1D1B20]">CleanBar</span>
+                        <span className="px-1.5 py-0.5 rounded bg-[#E8DEF8] text-[#21005D] text-[8px] font-bold">
                           No Root
                         </span>
                       </div>
-                      <p className="text-[11px] text-[#49454F] mt-0.5 truncate">
+                      <p className="text-[10px] text-[#49454F] mt-0.5 truncate">
                         Status Bar Hider via Shizuku
                       </p>
                     </div>
-                    <ExternalLink className="w-4 h-4 text-[#79747E] group-hover:text-[#6750A4] transition shrink-0" />
+                    <ExternalLink className="w-3.5 h-3.5 text-[#79747E] group-hover:text-[#6750A4] transition shrink-0" />
                   </div>
                 </a>
               </div>
 
               {/* SECTION 4: SUPPORT DEVELOPER (App-Themed, Original Icons) */}
-              <div className="space-y-2">
-                <span className="text-[11px] font-bold text-[#6750A4] uppercase tracking-wider px-1 block">
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold text-[#6750A4] uppercase tracking-wider px-1 block">
                   Support Developer
                 </span>
 
                 {/* UPI Card */}
                 <div
                   onClick={() => triggerCopy('UPI ID', 'darkcaptain@ybl')}
-                  className="bg-[#FEF7FF] rounded-[18px] p-3 border border-[#E7E0EC] flex items-center justify-between cursor-pointer hover:border-[#6750A4]/40 transition shadow-xs group"
+                  className="bg-[#FEF7FF] rounded-[14px] p-2.5 border border-[#E7E0EC] flex items-center justify-between cursor-pointer hover:border-[#6750A4]/40 transition shadow-xs group"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-white border border-[#E7E0EC] flex items-center justify-center shrink-0 p-1">
-                      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-white border border-[#E7E0EC] flex items-center justify-center shrink-0 p-1">
+                      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none">
                         <path d="M5 4.5L12.5 12L5 19.5H8.5L16 12L8.5 4.5H5Z" fill="#097939" />
                         <path d="M11.5 4.5L19 12L11.5 19.5H15L22.5 12L15 4.5H11.5Z" fill="#F37021" />
                       </svg>
                     </div>
                     <div className="min-w-0">
-                      <div className="text-[10px] font-bold text-[#79747E] uppercase tracking-wider">UPI</div>
+                      <div className="text-[9px] font-bold text-[#79747E] uppercase tracking-wider">UPI</div>
                       <div className="text-xs font-bold text-[#1D1B20] font-mono truncate">darkcaptain@ybl</div>
                     </div>
                   </div>
@@ -1439,26 +1490,26 @@ export default function App() {
                       e.stopPropagation();
                       triggerCopy('UPI ID', 'darkcaptain@ybl');
                     }}
-                    className="p-1.5 rounded-lg text-[#6750A4] hover:bg-[#6750A4]/10 transition shrink-0"
+                    className="p-1 rounded-lg text-[#6750A4] hover:bg-[#6750A4]/10 transition shrink-0"
                     title="Copy UPI ID"
                   >
-                    <Copy className="w-4 h-4" />
+                    <Copy className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
                 {/* Binance Card */}
                 <div
                   onClick={() => triggerCopy('Binance ID', '1138545342')}
-                  className="bg-[#FEF7FF] rounded-[18px] p-3 border border-[#E7E0EC] flex items-center justify-between cursor-pointer hover:border-[#6750A4]/40 transition shadow-xs group"
+                  className="bg-[#FEF7FF] rounded-[14px] p-2.5 border border-[#E7E0EC] flex items-center justify-between cursor-pointer hover:border-[#6750A4]/40 transition shadow-xs group"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-[#F0B90B]/15 border border-[#F0B90B]/30 flex items-center justify-center shrink-0 p-1">
-                      <svg viewBox="0 0 24 24" className="w-5 h-5" fill="#F0B90B">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-[#F0B90B]/15 border border-[#F0B90B]/30 flex items-center justify-center shrink-0 p-1">
+                      <svg viewBox="0 0 24 24" className="w-4 h-4" fill="#F0B90B">
                         <path d="M12 9.36L14.64 12L12 14.64L9.36 12L12 9.36ZM12 2L16.62 6.62L13.91 9.34L12 7.43L10.09 9.34L7.38 6.62L12 2ZM12 22L7.38 17.38L10.09 14.66L12 16.57L13.91 14.66L16.62 17.38L12 22ZM2 12L4.72 9.28L7.43 12L4.72 14.72L2 12ZM22 12L19.28 9.28L16.57 12L19.28 14.72L22 12Z" />
                       </svg>
                     </div>
                     <div className="min-w-0">
-                      <div className="text-[10px] font-bold text-[#79747E] uppercase tracking-wider">Binance Pay</div>
+                      <div className="text-[9px] font-bold text-[#79747E] uppercase tracking-wider">Binance Pay</div>
                       <div className="text-xs font-bold text-[#1D1B20] font-mono truncate">1138545342</div>
                     </div>
                   </div>
@@ -1467,36 +1518,36 @@ export default function App() {
                       e.stopPropagation();
                       triggerCopy('Binance ID', '1138545342');
                     }}
-                    className="p-1.5 rounded-lg text-[#6750A4] hover:bg-[#6750A4]/10 transition shrink-0"
+                    className="p-1 rounded-lg text-[#6750A4] hover:bg-[#6750A4]/10 transition shrink-0"
                     title="Copy Binance ID"
                   >
-                    <Copy className="w-4 h-4" />
+                    <Copy className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
 
               {/* SECTION 5: APP VERSION & IN-PLACE UPDATER */}
-              <div className="space-y-2">
-                <span className="text-[11px] font-bold text-[#6750A4] uppercase tracking-wider px-1 block">
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold text-[#6750A4] uppercase tracking-wider px-1 block">
                   About & Updates
                 </span>
 
-                <div className="bg-[#FEF7FF] rounded-[20px] p-3.5 border border-[#E7E0EC] shadow-xs space-y-2.5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5">
-                      <img src="/logo.png" alt="CallCraft" className="w-7 h-7 rounded-lg border border-[#E7E0EC]" />
+                <div className="bg-[#FEF7FF] rounded-[16px] p-2.5 border border-[#E7E0EC] shadow-xs space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <img src="/logo.png" alt="CallCraft" className="w-6 h-6 rounded-md border border-[#E7E0EC]" />
                       <div>
                         <div className="text-xs font-black text-[#1D1B20]">
                           Call<span className="text-[#6750A4]">Craft</span>
                         </div>
-                        <div className="text-[10px] text-[#79747E] font-medium">Version 1.0.0</div>
+                        <div className="text-[9px] text-[#79747E] font-medium">Version 1.0.0</div>
                       </div>
                     </div>
 
                     <button
                       onClick={checkGithubUpdates}
                       disabled={updateStatus === 'checking'}
-                      className="px-3 py-1 rounded-lg bg-[#6750A4] hover:bg-[#553F8D] text-white text-xs font-bold flex items-center gap-1.5 transition disabled:opacity-60 shadow-xs"
+                      className="px-2.5 py-1 rounded-lg bg-[#6750A4] hover:bg-[#553F8D] text-white text-[10px] font-bold flex items-center gap-1.5 transition disabled:opacity-60 shadow-xs"
                     >
                       <RefreshCw className={`w-3 h-3 ${updateStatus === 'checking' ? 'animate-spin' : ''}`} />
                       <span>{updateStatus === 'checking' ? 'Checking...' : 'Check Update'}</span>
@@ -1506,20 +1557,20 @@ export default function App() {
                   {updateStatus === 'latest' && (
                     <div className="px-2.5 py-1.5 rounded-lg bg-[#10B981]/10 text-[#10B981] flex items-center gap-2">
                       <Check className="w-3.5 h-3.5 shrink-0" />
-                      <span className="text-xs font-bold">v1.0.0 is the latest version</span>
+                      <span className="text-[11px] font-bold">v1.0.0 is the latest version</span>
                     </div>
                   )}
 
                   {updateStatus === 'available' && latestReleaseInfo && (
-                    <div className="p-2.5 rounded-xl bg-[#E8DEF8] border border-[#6750A4]/30 space-y-1.5">
-                      <div className="text-xs font-bold text-[#21005D]">
+                    <div className="p-2 rounded-xl bg-[#E8DEF8] border border-[#6750A4]/30 space-y-1.5">
+                      <div className="text-[11px] font-bold text-[#21005D]">
                         Update Available: v{latestReleaseInfo.version}
                       </div>
                       <a
                         href={latestReleaseInfo.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg bg-[#6750A4] text-white text-xs font-bold hover:bg-[#553F8D] transition"
+                        className="inline-flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg bg-[#6750A4] text-white text-[11px] font-bold hover:bg-[#553F8D] transition"
                       >
                         <Download className="w-3 h-3" />
                         <span>Install Update (In-Place)</span>
@@ -1528,10 +1579,60 @@ export default function App() {
                   )}
 
                   {updateStatus === 'error' && (
-                    <div className="px-2.5 py-1.5 rounded-lg bg-[#F43F5E]/10 text-[#F43F5E] text-xs font-medium">
+                    <div className="px-2.5 py-1 rounded-lg bg-[#F43F5E]/10 text-[#F43F5E] text-[11px] font-medium">
                       Failed to check update.
                     </div>
                   )}
+                </div>
+              </div>
+
+              {/* SECTION 6: APP LOGS & BUG REPORTER */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-bold text-[#6750A4] uppercase tracking-wider px-1 block">
+                  Logs & Diagnostics
+                </span>
+
+                <div className="bg-[#FEF7FF] rounded-[16px] p-2.5 border border-[#E7E0EC] shadow-xs space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-[#6750A4]/12 text-[#6750A4] flex items-center justify-center shrink-0">
+                        <Bug className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-[#1D1B20]">System & Error Logs</div>
+                        <div className="text-[9px] text-[#79747E] font-medium">{diagnosticLogs.length} events • All Systems Healthy</div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsLogsModalOpen(true)}
+                      className="px-2.5 py-1 rounded-lg bg-[#ECE6F0] hover:bg-[#E8DEF8] text-[#6750A4] text-[10px] font-bold transition flex items-center gap-1 shadow-xs"
+                    >
+                      <span>View</span>
+                    </button>
+                  </div>
+
+                  <div className="h-px bg-[#E7E0EC]/40" />
+
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={copyDiagnosticLogs}
+                      className="py-1.5 px-2 rounded-xl bg-[#F3EDF7] hover:bg-[#ECE6F0] text-[#1D1B20] text-[10px] font-bold flex items-center justify-center gap-1.5 transition border border-[#E7E0EC]/60"
+                    >
+                      <Copy className="w-3 h-3 text-[#6750A4]" />
+                      <span>Copy Logs</span>
+                    </button>
+
+                    <a
+                      href={generateLogMailto()}
+                      className="py-1.5 px-2 rounded-xl bg-[#6750A4] hover:bg-[#553F8D] text-white text-[10px] font-bold flex items-center justify-center gap-1.5 transition shadow-xs text-center"
+                    >
+                      <Mail className="w-3 h-3 text-white" />
+                      <span>Send to Sachin</span>
+                    </a>
+                  </div>
                 </div>
               </div>
 
@@ -2912,6 +3013,116 @@ export default function App() {
             >
               <Check className="w-3.5 h-3.5 text-[#10B981] stroke-[2.5]" />
               <span className="text-xs font-semibold whitespace-nowrap">{toastState.message}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Authentic Android System Permission Request Dialog */}
+        {pendingPermissionDialog && (
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-5 z-50 animate-in fade-in duration-150">
+            <div className="bg-[#FEF7FF] text-[#1D1B20] rounded-[28px] p-5 shadow-2xl max-w-[310px] w-full border border-[#E7E0EC] animate-in zoom-in-95 duration-150 flex flex-col items-center text-center">
+              <div className="w-11 h-11 rounded-full bg-[#6750A4]/12 flex items-center justify-center text-[#6750A4] mb-3">
+                <pendingPermissionDialog.icon className="w-5 h-5" />
+              </div>
+              <h3 className="text-sm font-bold text-[#1D1B20] leading-snug mb-1.5">
+                {pendingPermissionDialog.title}
+              </h3>
+              <p className="text-[11px] text-[#49454F] leading-relaxed mb-4">
+                {pendingPermissionDialog.description}
+              </p>
+              <div className="flex flex-col gap-1.5 w-full">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (pendingPermissionDialog.type === 'call_log') setHasCallLogPermission(true);
+                    if (pendingPermissionDialog.type === 'contacts') setHasContactsPermission(true);
+                    if (pendingPermissionDialog.type === 'phone_state') setHasPhoneStatePermission(true);
+                    showToast('Permission granted');
+                    setPendingPermissionDialog(null);
+                  }}
+                  className="w-full py-2.5 rounded-full bg-[#6750A4] hover:bg-[#553F8D] text-white text-xs font-bold transition shadow-xs"
+                >
+                  While using the app
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (pendingPermissionDialog.type === 'call_log') setHasCallLogPermission(true);
+                    if (pendingPermissionDialog.type === 'contacts') setHasContactsPermission(true);
+                    if (pendingPermissionDialog.type === 'phone_state') setHasPhoneStatePermission(true);
+                    showToast('Permission granted');
+                    setPendingPermissionDialog(null);
+                  }}
+                  className="w-full py-2 rounded-full text-xs font-semibold text-[#1D1B20] hover:bg-black/5 transition"
+                >
+                  Only this time
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    showToast('Permission denied');
+                    setPendingPermissionDialog(null);
+                  }}
+                  className="w-full py-2 rounded-full text-xs font-semibold text-[#6750A4] hover:bg-[#6750A4]/10 transition"
+                >
+                  Don't allow
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* In-App Diagnostic Logs Viewer Modal */}
+        {isLogsModalOpen && (
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex items-end justify-center z-50 animate-in fade-in duration-150">
+            <div className="bg-[#FEF7FF] text-[#1D1B20] w-full rounded-t-[28px] p-5 shadow-2xl flex flex-col space-y-3 max-h-[85%] border-t border-[#E7E0EC]">
+              <div className="w-10 h-1 bg-[#79747E]/30 rounded-full mx-auto shrink-0 mb-1" />
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bug className="w-4 h-4 text-[#6750A4]" />
+                  <h3 className="text-sm font-black text-[#1D1B20]">App Diagnostic Logs</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsLogsModalOpen(false)}
+                  className="p-1 rounded-full hover:bg-black/5 text-[#79747E] transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Logs Stream Terminal View */}
+              <div className="bg-[#1D1B20] text-emerald-400 font-mono text-[10px] p-3 rounded-2xl overflow-y-auto no-scrollbar space-y-1.5 max-h-[300px] border border-white/10 leading-relaxed select-text">
+                {diagnosticLogs.map((log, idx) => (
+                  <div key={idx} className="flex gap-2">
+                    <span className="text-slate-500 shrink-0">#{idx + 1}</span>
+                    <span className="text-slate-200">{log}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    copyDiagnosticLogs();
+                  }}
+                  className="py-2.5 rounded-xl bg-[#ECE6F0] hover:bg-[#E8DEF8] text-[#6750A4] text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy All Logs</span>
+                </button>
+
+                <a
+                  href={generateLogMailto()}
+                  className="py-2.5 rounded-xl bg-[#6750A4] hover:bg-[#553F8D] text-white text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-xs text-center"
+                >
+                  <Mail className="w-3.5 h-3.5 text-white" />
+                  <span>Send to Sachin</span>
+                </a>
+              </div>
             </div>
           </div>
         )}
