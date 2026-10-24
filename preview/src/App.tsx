@@ -365,7 +365,8 @@ export default function App() {
     const map = new Map<string, CallLogItem[]>();
     for (const item of logs) {
       const cleanNumber = item.number.replace(/\s+/g, '').replace(/-/g, '');
-      const key = cleanNumber || item.name.trim().toLowerCase();
+      const digitsOnly = cleanNumber.replace(/\D/g, '');
+      const key = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : (cleanNumber || item.name.trim().toLowerCase());
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(item);
     }

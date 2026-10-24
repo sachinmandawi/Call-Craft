@@ -46,6 +46,8 @@ class FakeCallHelper(private val context: Context) : SensorEventListener {
         if (enableSound) {
             try {
                 val ringtoneUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+                    ?: RingtoneManager.getActualDefaultRingtoneUri(context, RingtoneManager.TYPE_RINGTONE)
+                    ?: android.provider.Settings.System.DEFAULT_RINGTONE_URI
                 mediaPlayer = MediaPlayer().apply {
                     setDataSource(context, ringtoneUri)
                     setAudioStreamType(AudioManager.STREAM_RING)
@@ -117,6 +119,9 @@ class FakeCallHelper(private val context: Context) : SensorEventListener {
 
     fun playDtmfTone(char: Char) {
         try {
+            if (toneGenerator == null) {
+                toneGenerator = ToneGenerator(AudioManager.STREAM_VOICE_CALL, 80)
+            }
             val tone = when (char) {
                 '0' -> ToneGenerator.TONE_DTMF_0
                 '1' -> ToneGenerator.TONE_DTMF_1
@@ -138,9 +143,13 @@ class FakeCallHelper(private val context: Context) : SensorEventListener {
         }
     }
 
-    fun cleanup() {
+    fun stopCallMedia() {
         stopRinging()
         stopProximityTracking()
+    }
+
+    fun cleanup() {
+        stopCallMedia()
         try {
             toneGenerator?.release()
             toneGenerator = null

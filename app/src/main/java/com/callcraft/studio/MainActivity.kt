@@ -25,6 +25,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -562,6 +564,82 @@ fun CallLogEditorApp(repository: CallLogRepository) {
                             .fillMaxSize()
                             .padding(horizontal = 16.dp)
                     ) {
+                        // Floating Fake Call Countdown Banner
+                        AnimatedVisibility(
+                            visible = fakeCallCountdownSec > 0,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
+                        ) {
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 10.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                color = Color(0xFFF59E0B),
+                                shadowElevation = 3.dp
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(30.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(Color.White.copy(alpha = 0.25f)),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Bolt,
+                                                contentDescription = null,
+                                                tint = Color.White,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                        Column {
+                                            Text(
+                                                text = "Fake Call in ${fakeCallCountdownSec}s",
+                                                color = Color.White,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Black
+                                            )
+                                            Text(
+                                                text = "$fakeCallName ($fakeCallNumber)",
+                                                color = Color.White.copy(alpha = 0.85f),
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Medium,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
+                                    }
+
+                                    Button(
+                                        onClick = { fakeCallCountdownSec = 0 },
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black.copy(alpha = 0.25f)),
+                                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                        modifier = Modifier.height(28.dp)
+                                    ) {
+                                        Text(
+                                            "Cancel",
+                                            color = Color.White,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
                         // Sliding Segmented Control: All Calls | Missed
                         BoxWithConstraints(
                             modifier = Modifier
@@ -701,7 +779,9 @@ fun CallLogEditorApp(repository: CallLogRepository) {
                                             onClick = {
                                                 if (isSelectionMode) {
                                                     selectedItemIds = if (isItemSelected) {
-                                                        selectedItemIds - groupCallIds
+                                                        val remaining = selectedItemIds - groupCallIds
+                                                        if (remaining.isEmpty()) isSelectionMode = false
+                                                        remaining
                                                     } else {
                                                         selectedItemIds + groupCallIds
                                                     }
@@ -761,6 +841,12 @@ fun CallLogEditorApp(repository: CallLogRepository) {
                 isBottomSheetOpen = true
             },
             onDeleteCall = { callId ->
+                val current = viewingGroup
+                if (current != null) {
+                    val remaining = current.calls.filter { it.id != callId }
+                    if (remaining.isEmpty()) viewingGroup = null
+                    else viewingGroup = current.copy(calls = remaining, latestItem = remaining.first())
+                }
                 scope.launch {
                     logs = logs.filter { it.id != callId }
                     repository.deleteCallLog(callId)
@@ -793,6 +879,7 @@ fun CallLogEditorApp(repository: CallLogRepository) {
             deviceSimState = deviceSimState,
             onDismiss = {
                 isBottomSheetOpen = false
+                editingItem = null
                 prefilledName = ""
                 prefilledNumber = ""
                 prefilledType = null
@@ -822,6 +909,7 @@ fun CallLogEditorApp(repository: CallLogRepository) {
                     }
 
                     isBottomSheetOpen = false
+                    editingItem = null
                     prefilledName = ""
                     prefilledNumber = ""
                     prefilledType = null
@@ -1019,7 +1107,7 @@ fun CallLogEditorApp(repository: CallLogRepository) {
             brand = fakeCallBrand,
             fakeCallHelper = fakeCallHelper,
             onEndCall = { durationSec ->
-                fakeCallHelper.cleanup()
+                fakeCallHelper.stopCallMedia()
                 isFakeCallAnswered = false
                 if (fakeCallSaveToLog) {
                     scope.launch {
@@ -2145,6 +2233,8 @@ fun AddEditCallBottomSheet(
                                 dur,
                                 simSlot
                             )
+                        } else {
+                            Toast.makeText(context, "Please enter a phone number", Toast.LENGTH_SHORT).show()
                         }
                     },
                     modifier = Modifier.weight(1f),

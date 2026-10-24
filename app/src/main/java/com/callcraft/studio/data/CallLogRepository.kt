@@ -138,11 +138,14 @@ class CallLogRepository(private val context: Context) {
         val map = linkedMapOf<String, MutableList<CallLogItem>>()
         for (item in rawLogs) {
             val cleanNumber = item.number.replace("\\s+".toRegex(), "").replace("-", "")
-            val key = if (cleanNumber.isNotBlank()) cleanNumber else item.name.trim().lowercase()
+            val digitsOnly = cleanNumber.filter { it.isDigit() }
+            val key = if (digitsOnly.length >= 10) digitsOnly.takeLast(10)
+            else if (cleanNumber.isNotBlank()) cleanNumber
+            else item.name.trim().lowercase()
             map.getOrPut(key) { mutableListOf() }.add(item)
         }
 
-        return map.values.map { calls ->
+        return map.entries.map { (groupKey, calls) ->
             val sortedCalls = calls.sortedByDescending { it.dateMillis }
             val latest = sortedCalls.first()
 
@@ -159,7 +162,7 @@ class CallLogRepository(private val context: Context) {
             }
 
             ContactCallGroup(
-                key = latest.number.ifBlank { latest.name },
+                key = groupKey,
                 name = latest.name,
                 number = latest.number,
                 latestItem = latest,
