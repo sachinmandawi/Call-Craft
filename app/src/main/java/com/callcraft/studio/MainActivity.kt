@@ -42,8 +42,10 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
@@ -156,6 +158,7 @@ fun CallLogEditorApp(repository: CallLogRepository) {
     var fakeCallName by remember { mutableStateOf("Boss 🏢") }
     var fakeCallNumber by remember { mutableStateOf("+91 98765 43210") }
     var fakeCallSimSlot by remember { mutableStateOf(deviceSimState.defaultSlot) }
+    var fakeCallBrand by remember { mutableStateOf("pixel") }
     var fakeCallSound by remember { mutableStateOf(true) }
     var fakeCallVibrate by remember { mutableStateOf(true) }
     var fakeCallSaveToLog by remember { mutableStateOf(true) }
@@ -318,50 +321,89 @@ fun CallLogEditorApp(repository: CallLogRepository) {
                                         DropdownMenu(
                                             expanded = showTopMenu,
                                             onDismissRequest = { showTopMenu = false },
-                                            modifier = Modifier
-                                                .background(LilacBackground)
-                                                .clip(RoundedCornerShape(16.dp))
-                                                .border(1.dp, LilacBorder, RoundedCornerShape(16.dp))
+                                            shape = RoundedCornerShape(20.dp),
+                                            containerColor = LilacBackground,
+                                            shadowElevation = 8.dp,
+                                            border = androidx.compose.foundation.BorderStroke(1.dp, LilacBorder),
+                                            modifier = Modifier.width(220.dp)
                                         ) {
                                             DropdownMenuItem(
                                                 text = {
-                                                    Text(
-                                                        "Fake Call Simulator",
-                                                        fontSize = 13.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = LilacText
-                                                    )
+                                                    Column {
+                                                        Text(
+                                                            "Fake Call Simulator",
+                                                            fontSize = 13.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = LilacText
+                                                        )
+                                                        Text(
+                                                            "Escape awkward situations",
+                                                            fontSize = 10.sp,
+                                                            color = LilacTextMuted
+                                                        )
+                                                    }
                                                 },
                                                 leadingIcon = {
-                                                    Icon(
-                                                        Icons.Default.Bolt,
-                                                        contentDescription = null,
-                                                        tint = LilacPrimary,
-                                                        modifier = Modifier.size(18.dp)
-                                                    )
+                                                    Surface(
+                                                        shape = RoundedCornerShape(10.dp),
+                                                        color = Color(0xFFF59E0B).copy(alpha = 0.15f),
+                                                        modifier = Modifier.size(32.dp)
+                                                    ) {
+                                                        Box(contentAlignment = Alignment.Center) {
+                                                            Icon(
+                                                                Icons.Default.Bolt,
+                                                                contentDescription = null,
+                                                                tint = Color(0xFFF59E0B),
+                                                                modifier = Modifier.size(18.dp)
+                                                            )
+                                                        }
+                                                    }
                                                 },
+                                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                                                 onClick = {
                                                     showTopMenu = false
                                                     isFakeCallSetupOpen = true
                                                 }
                                             )
+
+                                            HorizontalDivider(
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
+                                                color = LilacBorder.copy(alpha = 0.6f)
+                                            )
+
                                             DropdownMenuItem(
                                                 text = {
-                                                    Text(
-                                                        "Settings",
-                                                        fontSize = 13.sp,
-                                                        fontWeight = FontWeight.Medium,
-                                                        color = LilacText
-                                                    )
+                                                    Column {
+                                                        Text(
+                                                            "Settings",
+                                                            fontSize = 13.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = LilacText
+                                                        )
+                                                        Text(
+                                                            "Dialer Role permission",
+                                                            fontSize = 10.sp,
+                                                            color = LilacTextMuted
+                                                        )
+                                                    }
                                                 },
                                                 leadingIcon = {
-                                                    Icon(
-                                                        Icons.Default.Settings,
-                                                        contentDescription = null,
-                                                        tint = LilacTextMuted,
-                                                        modifier = Modifier.size(18.dp)
-                                                    )
+                                                    Surface(
+                                                        shape = RoundedCornerShape(10.dp),
+                                                        color = LilacPrimary.copy(alpha = 0.12f),
+                                                        modifier = Modifier.size(32.dp)
+                                                    ) {
+                                                        Box(contentAlignment = Alignment.Center) {
+                                                            Icon(
+                                                                Icons.Default.Settings,
+                                                                contentDescription = null,
+                                                                tint = LilacPrimary,
+                                                                modifier = Modifier.size(18.dp)
+                                                            )
+                                                        }
+                                                    }
                                                 },
+                                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
                                                 onClick = {
                                                     showTopMenu = false
                                                     currentScreen = AppScreen.Settings
@@ -912,14 +954,16 @@ fun CallLogEditorApp(repository: CallLogRepository) {
             initialName = fakeCallName,
             initialNumber = fakeCallNumber,
             initialSimSlot = fakeCallSimSlot,
+            initialBrand = fakeCallBrand,
             initialSound = fakeCallSound,
             initialVibrate = fakeCallVibrate,
             initialSaveToLog = fakeCallSaveToLog,
             onDismiss = { isFakeCallSetupOpen = false },
-            onSchedule = { name, number, simSlot, delaySeconds, sound, vibrate, saveToLog ->
+            onSchedule = { name, number, simSlot, brand, delaySeconds, sound, vibrate, saveToLog ->
                 fakeCallName = name
                 fakeCallNumber = number
                 fakeCallSimSlot = simSlot
+                fakeCallBrand = brand
                 fakeCallSound = sound
                 fakeCallVibrate = vibrate
                 fakeCallSaveToLog = saveToLog
@@ -940,12 +984,13 @@ fun CallLogEditorApp(repository: CallLogRepository) {
         )
     }
 
-    // Fake Incoming Call Screen (Pixel M3 Full-Screen)
+    // Fake Incoming Call Screen (Authentic Multi-Brand Clone)
     if (isFakeIncomingActive) {
         FakeIncomingCallScreen(
             callerName = fakeCallName,
             callerNumber = fakeCallNumber,
             simSlot = fakeCallSimSlot,
+            brand = fakeCallBrand,
             onAnswer = {
                 fakeCallHelper.stopRinging()
                 isFakeIncomingActive = false
@@ -959,12 +1004,13 @@ fun CallLogEditorApp(repository: CallLogRepository) {
         )
     }
 
-    // Fake Active In-Call Screen (Live Timer, Keypad, Proximity Screen-Blackout)
+    // Fake Active In-Call Screen (Authentic Multi-Brand Clone)
     if (isFakeCallAnswered) {
         FakeActiveCallScreen(
             callerName = fakeCallName,
             callerNumber = fakeCallNumber,
             simSlot = fakeCallSimSlot,
+            brand = fakeCallBrand,
             fakeCallHelper = fakeCallHelper,
             onEndCall = { durationSec ->
                 fakeCallHelper.cleanup()
@@ -2447,7 +2493,7 @@ fun formatFullDateTime(dateMillis: Long): String {
 }
 
 // ─────────────────────────────────────────────────────────────
-// FAKE CALL SIMULATOR COMPOSABLES
+// FAKE CALL SIMULATOR COMPOSABLES (COMPACT & 4-BRAND CLONES)
 // ─────────────────────────────────────────────────────────────
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -2457,11 +2503,12 @@ fun FakeCallBottomSheet(
     initialName: String,
     initialNumber: String,
     initialSimSlot: Int,
+    initialBrand: String = "pixel",
     initialSound: Boolean,
     initialVibrate: Boolean,
     initialSaveToLog: Boolean,
     onDismiss: () -> Unit,
-    onSchedule: (name: String, number: String, simSlot: Int, delaySeconds: Int, sound: Boolean, vibrate: Boolean, saveToLog: Boolean) -> Unit
+    onSchedule: (name: String, number: String, simSlot: Int, brand: String, delaySeconds: Int, sound: Boolean, vibrate: Boolean, saveToLog: Boolean) -> Unit
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
@@ -2469,6 +2516,7 @@ fun FakeCallBottomSheet(
     var name by remember { mutableStateOf(initialName) }
     var number by remember { mutableStateOf(initialNumber) }
     var simSlot by remember { mutableStateOf(if (initialSimSlot == 2 && !deviceSimState.hasSim2 && deviceSimState.hasSim1) 1 else initialSimSlot) }
+    var selectedBrand by remember { mutableStateOf(initialBrand) }
     var soundEnabled by remember { mutableStateOf(initialSound) }
     var vibrateEnabled by remember { mutableStateOf(initialVibrate) }
     var saveToLog by remember { mutableStateOf(initialSaveToLog) }
@@ -2517,21 +2565,19 @@ fun FakeCallBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         containerColor = LilacBackground,
-        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .padding(top = 10.dp, bottom = 36.dp)
+                .padding(horizontal = 20.dp)
+                .padding(top = 4.dp, bottom = 28.dp)
                 .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Header Row (Unclipped Close Box)
+            // Header Row
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -2539,18 +2585,18 @@ fun FakeCallBottomSheet(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(34.dp)
-                            .clip(CircleShape)
-                            .background(LilacPrimaryContainer),
-                        contentAlignment = Alignment.Center
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFFF59E0B).copy(alpha = 0.15f),
+                        modifier = Modifier.size(30.dp)
                     ) {
-                        Icon(Icons.Default.Bolt, contentDescription = null, tint = LilacPrimary, modifier = Modifier.size(20.dp))
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Bolt, contentDescription = null, tint = Color(0xFFF59E0B), modifier = Modifier.size(18.dp))
+                        }
                     }
                     Text(
                         "Fake Call Simulator",
-                        fontSize = 18.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Black,
                         color = LilacText
                     )
@@ -2558,73 +2604,141 @@ fun FakeCallBottomSheet(
 
                 Box(
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(28.dp)
                         .clip(CircleShape)
                         .background(LilacSurfaceVariant)
                         .clickable(onClick = onDismiss),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = LilacTextMuted, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Close, contentDescription = "Close", tint = LilacTextMuted, modifier = Modifier.size(15.dp))
                 }
             }
 
-            // Quick Name Presets
-            Column {
-                Text("QUICK CALLER PRESET", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFF79747E), letterSpacing = 0.5.sp)
-                Spacer(modifier = Modifier.height(6.dp))
+            // 1. Phone Brand Style Selector (Google Pixel, Samsung One UI, Xiaomi HyperOS, Apple iPhone)
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    "CALL SCREEN BRAND / THEME",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF79747E),
+                    letterSpacing = 0.5.sp
+                )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    listOf(
+                        Triple("pixel", "Google Pixel", "📱"),
+                        Triple("samsung", "Samsung One UI", "🌌"),
+                        Triple("hyperos", "Xiaomi HyperOS", "⚡"),
+                        Triple("ios", "Apple iPhone", "🍎")
+                    ).forEach { (bId, bName, bIcon) ->
+                        val isSelected = selectedBrand == bId
+                        Surface(
+                            onClick = { selectedBrand = bId },
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSelected) LilacPrimary else LilacSurfaceVariant,
+                            border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, LilacBorder)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Text(bIcon, fontSize = 12.sp)
+                                Spacer(modifier = Modifier.width(5.dp))
+                                Text(
+                                    text = bName,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) Color.White else LilacText
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 2. Quick Caller Presets
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    "QUICK CALLER PRESET",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF79747E),
+                    letterSpacing = 0.5.sp
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
                     namePresets.forEach { preset ->
                         val isSelected = name == preset
                         Surface(
-                            onClick = { name = preset },
-                            shape = RoundedCornerShape(12.dp),
+                            onClick = {
+                                name = preset
+                                when (preset) {
+                                    "Boss 🏢" -> number = "+91 98123 45678"
+                                    "Mom ❤️" -> number = "+91 98980 12345"
+                                    "Doctor 🩺" -> number = "+91 98234 56789"
+                                    "Pizza 🍕" -> number = "+91 98765 00000"
+                                    "Police 🚓" -> number = "112"
+                                }
+                            },
+                            shape = RoundedCornerShape(10.dp),
                             color = if (isSelected) LilacPrimary else LilacSurfaceVariant,
                             border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, LilacBorder)
                         ) {
                             Text(
                                 text = preset,
-                                fontSize = 12.sp,
+                                fontSize = 11.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (isSelected) Color.White else LilacText,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
                             )
                         }
                     }
                 }
             }
 
-            // Caller Name Field
-            Column {
-                Text("Caller Name", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = LilacTextMuted)
-                Spacer(modifier = Modifier.height(4.dp))
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = LilacSurface,
-                        unfocusedContainerColor = LilacSurface,
-                        focusedBorderColor = LilacPrimary,
-                        unfocusedBorderColor = LilacBorder
+            // 3. Compact Caller Name Input
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text("Caller Name", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = LilacTextMuted)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(42.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(LilacSurface)
+                        .border(1.dp, LilacBorder, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 12.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    BasicTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        singleLine = true,
+                        textStyle = TextStyle(
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = LilacText
+                        ),
+                        modifier = Modifier.fillMaxWidth()
                     )
-                )
+                }
             }
 
-            // Caller Phone Number + Pick Contact
-            Column {
+            // 4. Compact Caller Phone Number + Pick Contact
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Phone Number", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = LilacTextMuted)
+                    Text("Phone Number", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = LilacTextMuted)
                     Surface(
                         onClick = {
                             val pickIntent = Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI)
@@ -2635,41 +2749,48 @@ fun FakeCallBottomSheet(
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.5.dp)
                         ) {
-                            Icon(Icons.Default.Contacts, contentDescription = null, tint = LilacPrimary, modifier = Modifier.size(12.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Pick Contact", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = LilacPrimary)
+                            Icon(Icons.Default.Contacts, contentDescription = null, tint = LilacPrimary, modifier = Modifier.size(11.dp))
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text("Pick Contact", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = LilacPrimary)
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(4.dp))
-                OutlinedTextField(
-                    value = number,
-                    onValueChange = { number = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = LilacSurface,
-                        unfocusedContainerColor = LilacSurface,
-                        focusedBorderColor = LilacPrimary,
-                        unfocusedBorderColor = LilacBorder
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(42.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(LilacSurface)
+                        .border(1.dp, LilacBorder, RoundedCornerShape(12.dp))
+                        .padding(horizontal = 12.dp),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    BasicTextField(
+                        value = number,
+                        onValueChange = { number = it },
+                        singleLine = true,
+                        textStyle = TextStyle(
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = LilacText
+                        ),
+                        modifier = Modifier.fillMaxWidth()
                     )
-                )
+                }
             }
 
-            // SIM Slot Selection
-            Column {
-                Text("SIM Card", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = LilacTextMuted)
-                Spacer(modifier = Modifier.height(4.dp))
+            // 5. Compact SIM Slot Selection
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text("SIM Card", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = LilacTextMuted)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(12.dp))
                         .background(LilacSurfaceVariant)
-                        .padding(3.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        .padding(2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
                     listOf(
                         Pair(1, deviceSimState.hasSim1),
@@ -2681,16 +2802,16 @@ fun FakeCallBottomSheet(
                         Box(
                             modifier = Modifier
                                 .weight(1f)
-                                .clip(RoundedCornerShape(11.dp))
+                                .clip(RoundedCornerShape(10.dp))
                                 .alpha(if (isInserted) 1f else 0.45f)
                                 .background(if (isSlotSelected) (if (slot == 1) LilacPrimary else Color(0xFF0284C7)) else Color.Transparent)
                                 .clickable(enabled = isInserted) { simSlot = slot }
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = 6.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = displayLabel,
-                                fontSize = 12.sp,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isSlotSelected) Color.White else LilacText
                             )
@@ -2699,8 +2820,8 @@ fun FakeCallBottomSheet(
                 }
             }
 
-            // Delay Selector: Quick Presets + Custom Inputs
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            // 6. Compact Trigger Delay & Inputs
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 val totalCalculatedSec = ((delayMinsText.toIntOrNull() ?: 0) * 60) + (delaySecsText.toIntOrNull() ?: 0)
 
                 Row(
@@ -2717,12 +2838,11 @@ fun FakeCallBottomSheet(
                     )
                 }
 
-                // Presets Row
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
                     delayPresets.forEach { (sec, label) ->
                         val isSelected = selectedPresetSec == sec
@@ -2732,99 +2852,117 @@ fun FakeCallBottomSheet(
                                 delayMinsText = (sec / 60).toString()
                                 delaySecsText = (sec % 60).toString()
                             },
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RoundedCornerShape(10.dp),
                             color = if (isSelected) LilacPrimaryContainer else LilacSurfaceVariant,
-                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, LilacPrimary) else null
+                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.2.dp, LilacPrimary) else null
                         ) {
                             Text(
                                 text = label,
-                                fontSize = 12.sp,
+                                fontSize = 11.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (isSelected) LilacPrimary else LilacText,
-                                modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp)
+                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp)
                             )
                         }
                     }
                 }
 
-                // Custom Delay Numeric Inputs
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    OutlinedTextField(
-                        value = delayMinsText,
-                        onValueChange = { newText ->
-                            val clean = newText.filter { it.isDigit() }
-                            delayMinsText = clean
-                            val m = clean.toIntOrNull() ?: 0
-                            val s = delaySecsText.toIntOrNull() ?: 0
-                            val total = (m * 60) + s
-                            selectedPresetSec = delayPresets.find { it.first == total }?.first
-                        },
-                        modifier = Modifier.weight(1f),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        shape = RoundedCornerShape(12.dp),
-                        trailingIcon = {
-                            Text("min", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = LilacTextMuted, modifier = Modifier.padding(end = 8.dp))
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = LilacSurface,
-                            unfocusedContainerColor = LilacSurface,
-                            focusedBorderColor = LilacPrimary,
-                            unfocusedBorderColor = LilacBorder
-                        )
-                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(38.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(LilacSurface)
+                            .border(1.dp, LilacBorder, RoundedCornerShape(10.dp))
+                            .padding(horizontal = 10.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            BasicTextField(
+                                value = delayMinsText,
+                                onValueChange = { newText ->
+                                    val clean = newText.filter { it.isDigit() }
+                                    delayMinsText = clean
+                                    val m = clean.toIntOrNull() ?: 0
+                                    val s = delaySecsText.toIntOrNull() ?: 0
+                                    val total = (m * 60) + s
+                                    selectedPresetSec = delayPresets.find { it.first == total }?.first
+                                },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                textStyle = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = LilacText),
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text("min", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = LilacTextMuted)
+                        }
+                    }
 
-                    OutlinedTextField(
-                        value = delaySecsText,
-                        onValueChange = { newText ->
-                            val clean = newText.filter { it.isDigit() }
-                            val sVal = clean.toIntOrNull() ?: 0
-                            delaySecsText = if (sVal > 59) "59" else clean
-                            val m = delayMinsText.toIntOrNull() ?: 0
-                            val s = delaySecsText.toIntOrNull() ?: 0
-                            val total = (m * 60) + s
-                            selectedPresetSec = delayPresets.find { it.first == total }?.first
-                        },
-                        modifier = Modifier.weight(1f),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        shape = RoundedCornerShape(12.dp),
-                        trailingIcon = {
-                            Text("sec", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = LilacTextMuted, modifier = Modifier.padding(end = 8.dp))
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = LilacSurface,
-                            unfocusedContainerColor = LilacSurface,
-                            focusedBorderColor = LilacPrimary,
-                            unfocusedBorderColor = LilacBorder
-                        )
-                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(38.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(LilacSurface)
+                            .border(1.dp, LilacBorder, RoundedCornerShape(10.dp))
+                            .padding(horizontal = 10.dp),
+                        contentAlignment = Alignment.CenterStart
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            BasicTextField(
+                                value = delaySecsText,
+                                onValueChange = { newText ->
+                                    val clean = newText.filter { it.isDigit() }
+                                    val sVal = clean.toIntOrNull() ?: 0
+                                    delaySecsText = if (sVal > 59) "59" else clean
+                                    val m = delayMinsText.toIntOrNull() ?: 0
+                                    val s = delaySecsText.toIntOrNull() ?: 0
+                                    val total = (m * 60) + s
+                                    selectedPresetSec = delayPresets.find { it.first == total }?.first
+                                },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                textStyle = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Bold, color = LilacText),
+                                modifier = Modifier.weight(1f)
+                            )
+                            Text("sec", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = LilacTextMuted)
+                        }
+                    }
                 }
             }
 
-            // Toggles
+            // 7. Compact Switches Container
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(14.dp),
                 color = LilacSurface,
                 border = androidx.compose.foundation.BorderStroke(1.dp, LilacBorder)
             ) {
-                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null, tint = LilacPrimary, modifier = Modifier.size(18.dp))
-                            Text("Ringtone Sound", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = LilacText)
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null, tint = LilacPrimary, modifier = Modifier.size(16.dp))
+                            Text("Ringtone Sound", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = LilacText)
                         }
                         Switch(
                             checked = soundEnabled,
                             onCheckedChange = { soundEnabled = it },
+                            modifier = Modifier.scale(0.8f),
                             colors = SwitchDefaults.colors(checkedTrackColor = LilacPrimary)
                         )
                     }
@@ -2834,13 +2972,14 @@ fun FakeCallBottomSheet(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Default.Vibration, contentDescription = null, tint = LilacPrimary, modifier = Modifier.size(18.dp))
-                            Text("Vibration Pattern", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = LilacText)
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Icon(Icons.Default.Vibration, contentDescription = null, tint = LilacPrimary, modifier = Modifier.size(16.dp))
+                            Text("Vibration Pattern", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = LilacText)
                         }
                         Switch(
                             checked = vibrateEnabled,
                             onCheckedChange = { vibrateEnabled = it },
+                            modifier = Modifier.scale(0.8f),
                             colors = SwitchDefaults.colors(checkedTrackColor = LilacPrimary)
                         )
                     }
@@ -2850,30 +2989,34 @@ fun FakeCallBottomSheet(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Icon(Icons.Default.History, contentDescription = null, tint = LilacPrimary, modifier = Modifier.size(18.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Icon(Icons.Default.History, contentDescription = null, tint = LilacPrimary, modifier = Modifier.size(16.dp))
                             Column {
-                                Text("Auto-Save to Call History", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = LilacText)
-                                Text("Records in real Android Call Log", fontSize = 10.sp, color = LilacTextMuted)
+                                Text("Auto-Save to Call History", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = LilacText)
+                                Text("Records in real Android Call Log", fontSize = 9.sp, color = LilacTextMuted)
                             }
                         }
                         Switch(
                             checked = saveToLog,
                             onCheckedChange = { saveToLog = it },
+                            modifier = Modifier.scale(0.8f),
                             colors = SwitchDefaults.colors(checkedTrackColor = LilacPrimary)
                         )
                     }
                 }
             }
 
-            // Schedule Button
-            val totalSec = ((delayMinsText.toIntOrNull() ?: 0) * 60) + (delaySecsText.toIntOrNull() ?: 0)
+            // 8. Schedule Action Button
             Button(
                 onClick = {
+                    val m = delayMinsText.toIntOrNull() ?: 0
+                    val s = delaySecsText.toIntOrNull() ?: 0
+                    val totalSec = (m * 60) + s
                     onSchedule(
                         name.ifBlank { "Unknown" },
                         number.ifBlank { "+91 98765 43210" },
                         simSlot,
+                        selectedBrand,
                         totalSec,
                         soundEnabled,
                         vibrateEnabled,
@@ -2882,23 +3025,28 @@ fun FakeCallBottomSheet(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
+                    .height(44.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = LilacPrimary)
             ) {
-                Icon(Icons.Default.Bolt, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Bolt, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("Schedule Fake Call", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text("Schedule Fake Call", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
         }
     }
 }
+
+// ─────────────────────────────────────────────────────────────
+// AUTHENTIC 4-BRAND INCOMING CALL SCREENS
+// ─────────────────────────────────────────────────────────────
 
 @Composable
 fun FakeIncomingCallScreen(
     callerName: String,
     callerNumber: String,
     simSlot: Int,
+    brand: String = "pixel",
     onAnswer: () -> Unit,
     onDecline: () -> Unit
 ) {
@@ -2910,133 +3058,414 @@ fun FakeIncomingCallScreen(
         label = "pulse"
     )
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF0F0E13))
-            .padding(horizontal = 24.dp, vertical = 40.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
-        ) {
-            // Top Badge
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = Color(0xFF2B2930),
-                modifier = Modifier.padding(top = 20.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.PhoneCallback, contentDescription = null, tint = Color(0xFFD0BCFF), modifier = Modifier.size(14.dp))
-                    Text(
-                        "Incoming call • SIM $simSlot",
-                        color = Color(0xFFD0BCFF),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            // Center: Glowing Avatar & Caller Info
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .scale(pulseScale)
-                        .clip(CircleShape)
-                        .background(
-                            Brush.radialGradient(
-                                listOf(LilacPrimary, LilacPrimaryDark)
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = callerName.take(1).uppercase(),
-                        fontSize = 40.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White
-                    )
-                }
-
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = callerName,
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Black,
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = callerNumber,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFFCAC4D0)
-                    )
-                }
-            }
-
-            // Bottom Actions (Decline & Answer)
-            Row(
+    when (brand) {
+        "samsung" -> {
+            // Samsung One UI Authentic Incoming Screen
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 20.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color(0xFF132039), Color(0xFF0C1424))
+                        )
+                    )
+                    .padding(horizontal = 24.dp, vertical = 40.dp)
             ) {
-                // Decline
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(
-                        modifier = Modifier
-                            .size(68.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFFBA1A1A))
-                            .clickable(onClick = onDecline),
-                        contentAlignment = Alignment.Center
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(top = 28.dp)
                     ) {
-                        Icon(Icons.Default.CallEnd, contentDescription = "Decline", tint = Color.White, modifier = Modifier.size(32.dp))
+                        Text(
+                            text = callerName,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Jio 5G (SIM $simSlot) • $callerNumber",
+                            fontSize = 13.sp,
+                            color = Color(0xFF93C5FD)
+                        )
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Decline", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
-                }
 
-                // Answer
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    // Samsung Frosted Avatar Circle
                     Box(
                         modifier = Modifier
-                            .size(68.dp)
-                            .scale(pulseScale)
+                            .size(100.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF10B981))
-                            .clickable(onClick = onAnswer),
+                            .background(Color(0x33FFFFFF))
+                            .border(1.5.dp, Color(0x44FFFFFF), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Call, contentDescription = "Answer", tint = Color.White, modifier = Modifier.size(32.dp))
+                        Text(
+                            text = callerName.take(1).uppercase(),
+                            fontSize = 42.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Answer", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
+
+                    // Samsung Swipe-style Circles (Answer Left, Decline Right)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 24.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .scale(pulseScale)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF22C55E))
+                                    .clickable(onClick = onAnswer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Call, contentDescription = "Answer", tint = Color.White, modifier = Modifier.size(30.dp))
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text("Answer", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                        }
+
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFEF4444))
+                                    .clickable(onClick = onDecline),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.CallEnd, contentDescription = "Decline", tint = Color.White, modifier = Modifier.size(30.dp))
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text("Decline", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                        }
+                    }
+                }
+            }
+        }
+        "hyperos" -> {
+            // Xiaomi HyperOS Authentic Incoming Screen
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF17181A))
+                    .padding(horizontal = 24.dp, vertical = 40.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(top = 28.dp)
+                    ) {
+                        Text(
+                            text = callerName,
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Mobile | India • SIM $simSlot",
+                            fontSize = 13.sp,
+                            color = Color(0xFFA1A1AA)
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = callerNumber,
+                            fontSize = 12.sp,
+                            color = Color(0xFF71717A)
+                        )
+                    }
+
+                    // HyperOS Avatar with Ring
+                    Box(
+                        modifier = Modifier
+                            .size(96.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF27272A))
+                            .border(2.dp, Color(0xFF3F3F46), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = callerName.take(1).uppercase(),
+                            fontSize = 38.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 24.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFEF4444))
+                                    .clickable(onClick = onDecline),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.CallEnd, contentDescription = "Decline", tint = Color.White, modifier = Modifier.size(30.dp))
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text("Decline", fontSize = 11.sp, color = Color(0xFFA1A1AA))
+                        }
+
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .scale(pulseScale)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF10B981))
+                                    .clickable(onClick = onAnswer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Call, contentDescription = "Answer", tint = Color.White, modifier = Modifier.size(30.dp))
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text("Answer", fontSize = 11.sp, color = Color(0xFFA1A1AA))
+                        }
+                    }
+                }
+            }
+        }
+        "ios" -> {
+            // Apple iPhone iOS Authentic Incoming Screen
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+                    .padding(horizontal = 24.dp, vertical = 44.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(top = 28.dp)
+                    ) {
+                        Text(
+                            text = callerName,
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Normal,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "mobile • $callerNumber",
+                            fontSize = 14.sp,
+                            color = Color(0xFF8E8E93)
+                        )
+                    }
+
+                    // iOS Round Monogram Avatar
+                    Box(
+                        modifier = Modifier
+                            .size(96.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF3A3A3C)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = callerName.take(1).uppercase(),
+                            fontSize = 38.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White
+                        )
+                    }
+
+                    // iOS Unlocked Incoming Buttons (Decline left, Accept right)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 24.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                modifier = Modifier
+                                    .size(68.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFFF3B30))
+                                    .clickable(onClick = onDecline),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.CallEnd, contentDescription = "Decline", tint = Color.White, modifier = Modifier.size(32.dp))
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("decline", fontSize = 12.sp, color = Color.White)
+                        }
+
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                modifier = Modifier
+                                    .size(68.dp)
+                                    .scale(pulseScale)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF34C759))
+                                    .clickable(onClick = onAnswer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Call, contentDescription = "Accept", tint = Color.White, modifier = Modifier.size(32.dp))
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("accept", fontSize = 12.sp, color = Color.White)
+                        }
+                    }
+                }
+            }
+        }
+        else -> {
+            // Google Pixel Material You Standard Incoming Screen
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFF121214))
+                    .padding(horizontal = 24.dp, vertical = 36.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = Color(0xFF2B2930),
+                        modifier = Modifier.padding(top = 16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.PhoneCallback, contentDescription = null, tint = Color(0xFFD0BCFF), modifier = Modifier.size(14.dp))
+                            Text(
+                                "Incoming call • SIM $simSlot",
+                                color = Color(0xFFD0BCFF),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(96.dp)
+                                .scale(pulseScale)
+                                .clip(CircleShape)
+                                .background(
+                                    Brush.radialGradient(
+                                        listOf(LilacPrimary, LilacPrimaryDark)
+                                    )
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = callerName.take(1).uppercase(),
+                                fontSize = 38.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White
+                            )
+                        }
+
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = callerName,
+                                fontSize = 26.sp,
+                                fontWeight = FontWeight.Black,
+                                color = Color.White,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = callerNumber,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFFCAC4D0)
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 20.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFBA1A1A))
+                                    .clickable(onClick = onDecline),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.CallEnd, contentDescription = "Decline", tint = Color.White, modifier = Modifier.size(30.dp))
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text("Decline", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
+                        }
+
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .scale(pulseScale)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF10B981))
+                                    .clickable(onClick = onAnswer),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Call, contentDescription = "Answer", tint = Color.White, modifier = Modifier.size(30.dp))
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text("Answer", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
+                        }
+                    }
                 }
             }
         }
     }
 }
 
+// ─────────────────────────────────────────────────────────────
+// AUTHENTIC 4-BRAND ACTIVE IN-CALL SCREENS
+// ─────────────────────────────────────────────────────────────
+
 @Composable
 fun FakeActiveCallScreen(
     callerName: String,
     callerNumber: String,
     simSlot: Int,
+    brand: String = "pixel",
     fakeCallHelper: FakeCallHelper?,
     onEndCall: (Long) -> Unit
 ) {
@@ -3065,7 +3494,7 @@ fun FakeActiveCallScreen(
         onEndCall(elapsedSeconds)
     }
 
-    // Proximity Blackout: When phone is brought to ear, screen dims completely black!
+    // Proximity Ear Blackout
     if (isNearEar) {
         Box(
             modifier = Modifier
@@ -3073,10 +3502,22 @@ fun FakeActiveCallScreen(
                 .background(Color.Black)
         )
     } else {
+        val mins = elapsedSeconds / 60
+        val secs = elapsedSeconds % 60
+        val formattedDuration = String.format("%02d:%02d", mins, secs)
+
+        // Dynamic Brand Theme Styling
+        val bgModifier = when (brand) {
+            "samsung" -> Modifier.background(Brush.verticalGradient(listOf(Color(0xFF132039), Color(0xFF0C1424))))
+            "hyperos" -> Modifier.background(Color(0xFF17181A))
+            "ios" -> Modifier.background(Color.Black)
+            else -> Modifier.background(Color(0xFF121214))
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFF121214))
+                .then(bgModifier)
                 .padding(horizontal = 24.dp, vertical = 32.dp)
         ) {
             Column(
@@ -3084,70 +3525,100 @@ fun FakeActiveCallScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // Top Info & Live Timer
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(top = 16.dp)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFF2B2930),
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    ) {
-                        Text(
-                            text = "SIM $simSlot • HD",
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFD0BCFF),
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        )
+                // Header (Brand specific)
+                when (brand) {
+                    "samsung" -> {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(top = 16.dp)
+                        ) {
+                            Text(text = callerName, fontSize = 26.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(text = "Jio 5G (SIM $simSlot) • $callerNumber", fontSize = 13.sp, color = Color(0xFF93C5FD))
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = if (isHold) "Call on hold" else formattedDuration,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (isHold) Color(0xFFFBBF24) else Color(0xFF38BDF8)
+                            )
+                        }
                     }
-
-                    // Contact Avatar
-                    Box(
-                        modifier = Modifier
-                            .size(76.dp)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.radialGradient(
-                                    listOf(LilacPrimary, LilacPrimaryDark)
+                    "hyperos" -> {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(top = 16.dp)
+                        ) {
+                            Text(text = callerName, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(text = "Mobile | India • SIM $simSlot", fontSize = 12.sp, color = Color(0xFFA1A1AA))
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (isHold) "Call on hold" else formattedDuration,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isHold) Color(0xFFFBBF24) else Color(0xFF22C55E)
+                            )
+                        }
+                    }
+                    "ios" -> {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(top = 20.dp)
+                        ) {
+                            Text(text = callerName, fontSize = 26.sp, fontWeight = FontWeight.Normal, color = Color.White)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = if (isHold) "call on hold" else formattedDuration,
+                                fontSize = 14.sp,
+                                color = if (isHold) Color(0xFFFBBF24) else Color(0xFF8E8E93)
+                            )
+                        }
+                    }
+                    else -> {
+                        // Pixel
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(top = 12.dp)
+                        ) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color(0xFF2B2930),
+                                modifier = Modifier.padding(bottom = 10.dp)
+                            ) {
+                                Text(
+                                    text = "SIM $simSlot • HD",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFD0BCFF),
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                                 )
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = callerName.take(1).uppercase(),
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Black,
-                            color = Color.White
-                        )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .size(72.dp)
+                                    .clip(CircleShape)
+                                    .background(Brush.radialGradient(listOf(LilacPrimary, LilacPrimaryDark))),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(text = callerName.take(1).uppercase(), fontSize = 30.sp, fontWeight = FontWeight.Black, color = Color.White)
+                            }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(text = callerName, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(text = callerNumber, fontSize = 13.sp, color = Color(0xFFCAC4D0))
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (isHold) "Call on hold" else formattedDuration,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = if (isHold) Color(0xFFFBBF24) else Color(0xFFC4C7C5)
+                            )
+                        }
                     }
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Text(
-                        text = callerName,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = callerNumber,
-                        fontSize = 13.sp,
-                        color = Color(0xFFCAC4D0)
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    val mins = elapsedSeconds / 60
-                    val secs = elapsedSeconds % 60
-                    Text(
-                        text = if (isHold) "Call on hold" else String.format("%02d:%02d", mins, secs),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = if (isHold) Color(0xFFFBBF24) else Color(0xFFC4C7C5)
-                    )
                 }
 
-                // Center: Keypad Dialpad OR Action Grid
+                // Center Area: Dialpad OR Brand Action Grid
                 if (isKeypadOpen) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -3182,7 +3653,7 @@ fun FakeActiveCallScreen(
                                         modifier = Modifier
                                             .size(52.dp)
                                             .clip(CircleShape)
-                                            .background(Color(0xFF2B2930))
+                                            .background(if (brand == "ios") Color(0x33FFFFFF) else Color(0xFF2B2930))
                                             .clickable {
                                                 dialedDigits += char
                                                 fakeCallHelper?.playDtmfTone(char)
@@ -3205,13 +3676,23 @@ fun FakeActiveCallScreen(
                         }
                     }
                 } else {
-                    // Google Phone Authentic 6-Button Grid (2 rows x 3 columns)
+                    // Brand Controls
+                    val buttonBg = when (brand) {
+                        "ios" -> Color(0x26FFFFFF)
+                        "samsung" -> Color(0x33FFFFFF)
+                        else -> Color(0xFF2B2930)
+                    }
+                    val buttonShape = when (brand) {
+                        "pixel" -> RoundedCornerShape(18.dp)
+                        else -> CircleShape
+                    }
+
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(20.dp),
-                        modifier = Modifier.padding(horizontal = 16.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp)
                     ) {
-                        // Row 1: Mute, Keypad, Speaker
+                        // Row 1
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
@@ -3221,8 +3702,8 @@ fun FakeActiveCallScreen(
                                 Box(
                                     modifier = Modifier
                                         .size(56.dp)
-                                        .clip(CircleShape)
-                                        .background(if (isMuted) Color.White else Color(0xFF2B2930))
+                                        .clip(buttonShape)
+                                        .background(if (isMuted) Color.White else buttonBg)
                                         .clickable { isMuted = !isMuted },
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -3234,7 +3715,11 @@ fun FakeActiveCallScreen(
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text(if (isMuted) "Unmute" else "Mute", fontSize = 11.sp, color = Color(0xFFCAC4D0))
+                                Text(
+                                    text = if (brand == "ios") "mute" else if (isMuted) "Unmute" else "Mute",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFCAC4D0)
+                                )
                             }
 
                             // Keypad
@@ -3242,24 +3727,28 @@ fun FakeActiveCallScreen(
                                 Box(
                                     modifier = Modifier
                                         .size(56.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(0xFF2B2930))
+                                        .clip(buttonShape)
+                                        .background(buttonBg)
                                         .clickable { isKeypadOpen = true },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(Icons.Default.Dialpad, contentDescription = "Keypad", tint = Color.White, modifier = Modifier.size(24.dp))
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text("Keypad", fontSize = 11.sp, color = Color(0xFFCAC4D0))
+                                Text(
+                                    text = if (brand == "ios") "keypad" else "Keypad",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFCAC4D0)
+                                )
                             }
 
-                            // Speaker
+                            // Audio / Speaker
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Box(
                                     modifier = Modifier
                                         .size(56.dp)
-                                        .clip(CircleShape)
-                                        .background(if (isSpeakerOn) Color.White else Color(0xFF2B2930))
+                                        .clip(buttonShape)
+                                        .background(if (isSpeakerOn) Color.White else buttonBg)
                                         .clickable { isSpeakerOn = !isSpeakerOn },
                                     contentAlignment = Alignment.Center
                                 ) {
@@ -3271,11 +3760,15 @@ fun FakeActiveCallScreen(
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text("Speaker", fontSize = 11.sp, color = Color(0xFFCAC4D0))
+                                Text(
+                                    text = if (brand == "ios") "audio" else "Speaker",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFCAC4D0)
+                                )
                             }
                         }
 
-                        // Row 2: Add call, Hold, Record
+                        // Row 2
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly
@@ -3285,15 +3778,19 @@ fun FakeActiveCallScreen(
                                 Box(
                                     modifier = Modifier
                                         .size(56.dp)
-                                        .clip(CircleShape)
-                                        .background(Color(0xFF2B2930))
-                                        .clickable { /* Add call */ },
+                                        .clip(buttonShape)
+                                        .background(buttonBg)
+                                        .clickable { },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(Icons.Default.Add, contentDescription = "Add call", tint = Color.White, modifier = Modifier.size(24.dp))
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text("Add call", fontSize = 11.sp, color = Color(0xFFCAC4D0))
+                                Text(
+                                    text = if (brand == "ios") "add call" else "Add call",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFCAC4D0)
+                                )
                             }
 
                             // Hold
@@ -3301,53 +3798,69 @@ fun FakeActiveCallScreen(
                                 Box(
                                     modifier = Modifier
                                         .size(56.dp)
-                                        .clip(CircleShape)
-                                        .background(if (isHold) Color(0xFFFBBF24) else Color(0xFF2B2930))
+                                        .clip(buttonShape)
+                                        .background(if (isHold) Color(0xFFFBBF24) else buttonBg)
                                         .clickable { isHold = !isHold },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        Icons.Default.Pause,
+                                        if (brand == "ios") Icons.Default.Videocam else Icons.Default.Pause,
                                         contentDescription = "Hold",
                                         tint = if (isHold) Color.Black else Color.White,
                                         modifier = Modifier.size(24.dp)
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text(if (isHold) "Unhold" else "Hold", fontSize = 11.sp, color = Color(0xFFCAC4D0))
+                                Text(
+                                    text = if (brand == "ios") "FaceTime" else if (isHold) "Unhold" else "Hold",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFCAC4D0)
+                                )
                             }
 
-                            // Record
+                            // Record / Contacts
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Box(
                                     modifier = Modifier
                                         .size(56.dp)
-                                        .clip(CircleShape)
-                                        .background(if (isRecording) Color(0xFFF43F5E) else Color(0xFF2B2930))
+                                        .clip(buttonShape)
+                                        .background(if (isRecording) Color(0xFFF43F5E) else buttonBg)
                                         .clickable { isRecording = !isRecording },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        Icons.Default.FiberManualRecord,
+                                        if (brand == "ios") Icons.Default.Contacts else Icons.Default.FiberManualRecord,
                                         contentDescription = "Record",
-                                        tint = if (isRecording) Color.White else Color(0xFFF43F5E),
+                                        tint = if (isRecording) Color.White else if (brand == "ios") Color.White else Color(0xFFF43F5E),
                                         modifier = Modifier.size(22.dp)
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(6.dp))
-                                Text(if (isRecording) "Recording" else "Record", fontSize = 11.sp, color = Color(0xFFCAC4D0))
+                                Text(
+                                    text = if (brand == "ios") "contacts" else if (isRecording) "Recording" else "Record",
+                                    fontSize = 11.sp,
+                                    color = Color(0xFFCAC4D0)
+                                )
                             }
                         }
                     }
                 }
 
-                // Bottom End Call (Authentic Google Phone prominent red circle)
+                // Bottom End Call (Brand Authentic)
+                val endCallColor = when (brand) {
+                    "ios" -> Color(0xFFFF3B30)
+                    "samsung" -> Color(0xFFE11D48)
+                    else -> Color(0xFFBA1A1A)
+                }
+
                 Box(
                     modifier = Modifier
-                        .padding(bottom = 24.dp)
-                        .size(68.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFBA1A1A))
+                        .padding(bottom = 20.dp)
+                        .then(
+                            if (brand == "samsung") Modifier.size(width = 76.dp, height = 54.dp).clip(RoundedCornerShape(27.dp))
+                            else Modifier.size(68.dp).clip(CircleShape)
+                        )
+                        .background(endCallColor)
                         .clickable { onEndCall(elapsedSeconds) },
                     contentAlignment = Alignment.Center
                 ) {
@@ -3355,7 +3868,7 @@ fun FakeActiveCallScreen(
                         Icons.Default.CallEnd,
                         contentDescription = "End Call",
                         tint = Color.White,
-                        modifier = Modifier.size(34.dp)
+                        modifier = Modifier.size(32.dp)
                     )
                 }
             }

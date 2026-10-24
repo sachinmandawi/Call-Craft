@@ -27,7 +27,9 @@ import {
   VolumeX,
   History,
   Pause,
-  Disc
+  Disc,
+  Video,
+  Users
 } from 'lucide-react';
 
 export type CallType = 1 | 2 | 3 | 5; // 1: Incoming, 2: Outgoing, 3: Missed, 5: Rejected
@@ -179,6 +181,12 @@ function formatDuration(totalSeconds: number): string {
   return `${secs}s`;
 }
 
+function formatCallTimer(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
 const MOCK_CONTACTS = [
   { name: 'Shalini 🐼', number: '+91 62617 49807', initials: 'SP', color: 'bg-purple-100 text-purple-700' },
   { name: 'Rohan Verma', number: '+91 98765 43210', initials: 'RV', color: 'bg-blue-100 text-blue-700' },
@@ -321,6 +329,7 @@ export default function App() {
 
   // Fake Call Simulator States
   const [isFakeCallModalOpen, setIsFakeCallModalOpen] = useState(false);
+  const [fakeCallBrand, setFakeCallBrand] = useState<'pixel' | 'samsung' | 'hyperos' | 'ios'>('pixel');
   const [fakeCallName, setFakeCallName] = useState('Boss 🏢');
   const [fakeCallNumber, setFakeCallNumber] = useState('+91 98765 43210');
   const [fakeCallSimSlot, setFakeCallSimSlot] = useState<1 | 2>(defaultSlot);
@@ -735,38 +744,38 @@ export default function App() {
                             className="fixed inset-0 z-40"
                             onClick={() => setIsTopMenuOpen(false)}
                           />
-                          <div className="absolute right-0 top-full mt-1 w-56 bg-[#FEF7FF] rounded-2xl shadow-xl border border-[#E7E0EC] py-1.5 z-50 animate-in fade-in zoom-in-95 duration-150">
+                          <div className="absolute right-0 top-full mt-2 w-[220px] bg-[#FEF7FF] rounded-[20px] shadow-2xl border border-[#E7E0EC] py-2 z-50 animate-in fade-in zoom-in-95 duration-150">
                             <button
                               onClick={() => {
                                 setIsTopMenuOpen(false);
                                 setIsFakeCallModalOpen(true);
                               }}
-                              className="w-full px-4 py-2.5 text-left text-xs font-bold text-[#1D1B20] hover:bg-[#F3EDF7] flex items-center gap-2.5 transition"
+                              className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-[#1D1B20] hover:bg-[#F3EDF7] flex items-center gap-2.5 transition"
                             >
-                              <div className="w-7 h-7 rounded-xl bg-amber-500/15 text-amber-600 flex items-center justify-center">
+                              <div className="w-[30px] h-[30px] rounded-[10px] bg-amber-500/15 text-amber-600 flex items-center justify-center shrink-0">
                                 <Zap className="w-4 h-4 fill-amber-500" />
                               </div>
-                              <div>
-                                <div>Fake Call Simulator</div>
-                                <div className="text-[10px] text-[#79747E] font-normal">Escape awkward situations</div>
+                              <div className="truncate">
+                                <div className="text-xs font-bold text-[#1D1B20]">Fake Call Simulator</div>
+                                <div className="text-[10px] text-[#79747E] font-normal truncate">Escape awkward situations</div>
                               </div>
                             </button>
 
-                            <div className="h-px bg-[#E7E0EC] my-1" />
+                            <div className="h-px bg-[#E7E0EC] my-1 mx-3" />
 
                             <button
                               onClick={() => {
                                 setIsTopMenuOpen(false);
                                 setCurrentScreen('settings');
                               }}
-                              className="w-full px-4 py-2.5 text-left text-xs font-bold text-[#1D1B20] hover:bg-[#F3EDF7] flex items-center gap-2.5 transition"
+                              className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-[#1D1B20] hover:bg-[#F3EDF7] flex items-center gap-2.5 transition"
                             >
-                              <div className="w-7 h-7 rounded-xl bg-[#6750A4]/15 text-[#6750A4] flex items-center justify-center">
+                              <div className="w-[30px] h-[30px] rounded-[10px] bg-[#6750A4]/15 text-[#6750A4] flex items-center justify-center shrink-0">
                                 <SettingsIcon className="w-4 h-4" />
                               </div>
-                              <div>
-                                <div>Settings</div>
-                                <div className="text-[10px] text-[#79747E] font-normal">Dialer Role permission</div>
+                              <div className="truncate">
+                                <div className="text-xs font-bold text-[#1D1B20]">Settings</div>
+                                <div className="text-[10px] text-[#79747E] font-normal truncate">Dialer role & system</div>
                               </div>
                             </button>
                           </div>
@@ -1633,104 +1642,143 @@ export default function App() {
         {/* Fake Call Simulator Setup Modal */}
         {isFakeCallModalOpen && (
           <div className="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-end justify-center z-50 animate-in fade-in duration-150">
-            <div className="bg-[#FEF7FF] text-[#1D1B20] w-full rounded-t-[36px] p-6 shadow-2xl flex flex-col space-y-4 max-h-[92%] overflow-y-auto border-t border-[#E7E0EC]">
-              <div className="w-12 h-1 bg-[#79747E]/40 rounded-full mx-auto shrink-0 mb-1" />
+            <div className="bg-[#FEF7FF] text-[#1D1B20] w-full rounded-t-[28px] p-5 shadow-2xl flex flex-col space-y-2.5 max-h-[92%] overflow-y-auto border-t border-[#E7E0EC]">
+              <div className="w-10 h-1 bg-[#79747E]/40 rounded-full mx-auto shrink-0 mb-0.5" />
 
               {/* Header */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-2xl bg-amber-500/15 text-amber-600 flex items-center justify-center">
-                    <Zap className="w-5 h-5 fill-amber-500" />
+                <div className="flex items-center gap-2">
+                  <div className="w-[30px] h-[30px] rounded-[10px] bg-amber-500/15 text-amber-600 flex items-center justify-center shrink-0">
+                    <Zap className="w-4 h-4 fill-amber-500" />
                   </div>
                   <div>
                     <h3 className="text-base font-black text-[#1D1B20] leading-tight">Fake Call Simulator</h3>
-                    <p className="text-[11px] text-[#6750A4] font-semibold">Escape awkward situations safely</p>
+                    <p className="text-[10px] text-[#6750A4] font-semibold">Escape awkward situations safely</p>
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsFakeCallModalOpen(false)}
-                  className="w-8 h-8 rounded-full bg-[#ECE6F0] flex items-center justify-center text-[#49454F] hover:bg-[#E8DEF8] transition"
+                  className="w-7 h-7 rounded-full bg-[#ECE6F0] flex items-center justify-center text-[#49454F] hover:bg-[#E8DEF8] transition"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Caller Quick Presets */}
+              {/* 1. Phone Brand / Theme Style Selector */}
               <div>
-                <label className="block text-xs font-bold text-[#49454F] mb-1.5">
-                  Quick Caller Presets
+                <label className="block text-[10px] font-bold text-[#79747E] tracking-wider uppercase mb-1">
+                  Call Screen Brand / Theme
                 </label>
-                <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                  {FAKE_CALL_PRESETS.map((preset) => (
-                    <button
-                      key={preset.name}
-                      type="button"
-                      onClick={() => {
-                        setFakeCallName(preset.name);
-                        setFakeCallNumber(preset.number);
-                      }}
-                      className={`px-3 py-1.5 rounded-full text-xs font-bold shrink-0 transition flex items-center gap-1 ${
-                        fakeCallName === preset.name
-                          ? 'bg-amber-500 text-white shadow-xs'
-                          : 'bg-[#ECE6F0] text-[#49454F] hover:bg-[#E8DEF8] hover:text-[#1D1B20]'
-                      }`}
-                    >
-                      <span>{preset.name}</span>
-                    </button>
-                  ))}
+                <div className="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+                  {[
+                    { id: 'pixel', name: 'Google Pixel', icon: '📱' },
+                    { id: 'samsung', name: 'Samsung One UI', icon: '🌌' },
+                    { id: 'hyperos', name: 'Xiaomi HyperOS', icon: '⚡' },
+                    { id: 'ios', name: 'Apple iPhone', icon: '🍎' },
+                  ].map((b) => {
+                    const isSelected = fakeCallBrand === b.id;
+                    return (
+                      <button
+                        key={b.id}
+                        type="button"
+                        onClick={() => setFakeCallBrand(b.id as any)}
+                        className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold shrink-0 transition flex items-center gap-1.5 border ${
+                          isSelected
+                            ? 'bg-[#6750A4] text-white border-[#6750A4] shadow-xs'
+                            : 'bg-[#ECE6F0] text-[#1D1B20] border-[#E7E0EC] hover:bg-[#E8DEF8]'
+                        }`}
+                      >
+                        <span className="text-xs">{b.icon}</span>
+                        <span>{b.name}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Custom Caller Name */}
+              {/* 2. Quick Caller Presets */}
               <div>
-                <label className="block text-xs font-bold text-[#49454F] mb-1">
-                  Caller Name
+                <label className="block text-[10px] font-bold text-[#79747E] tracking-wider uppercase mb-1">
+                  Quick Caller Preset
                 </label>
-                <input
-                  type="text"
-                  value={fakeCallName}
-                  onChange={(e) => setFakeCallName(e.target.value)}
-                  placeholder="e.g. Boss, Mom, Doctor"
-                  className="w-full bg-[#F3EDF7] border border-[#79747E]/30 rounded-2xl px-3.5 py-2 text-sm font-semibold focus:outline-none focus:border-[#6750A4] focus:bg-[#FEF7FF] transition"
-                />
+                <div className="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+                  {FAKE_CALL_PRESETS.map((preset) => {
+                    const isSelected = fakeCallName === preset.name;
+                    return (
+                      <button
+                        key={preset.name}
+                        type="button"
+                        onClick={() => {
+                          setFakeCallName(preset.name);
+                          setFakeCallNumber(preset.number);
+                        }}
+                        className={`px-2.5 py-1 rounded-[10px] text-[11px] font-bold shrink-0 transition flex items-center gap-1 border ${
+                          isSelected
+                            ? 'bg-[#6750A4] text-white border-[#6750A4] shadow-xs'
+                            : 'bg-[#ECE6F0] text-[#1D1B20] border-[#E7E0EC] hover:bg-[#E8DEF8]'
+                        }`}
+                      >
+                        <span>{preset.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Custom Phone Number with Contact Picker button */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-bold text-[#49454F]">
+              {/* 3. Compact Caller Name */}
+              <div className="space-y-0.5">
+                <label className="block text-[11px] font-bold text-[#79747E]">
+                  Caller Name
+                </label>
+                <div className="h-[42px] px-3 rounded-xl bg-[#F3EDF7] border border-[#E7E0EC] flex items-center focus-within:border-[#6750A4] focus-within:bg-[#FEF7FF] transition">
+                  <input
+                    type="text"
+                    value={fakeCallName}
+                    onChange={(e) => setFakeCallName(e.target.value)}
+                    placeholder="e.g. Boss, Mom, Doctor"
+                    className="w-full bg-transparent text-[13px] font-semibold text-[#1D1B20] outline-none placeholder:text-[#79747E]/60"
+                  />
+                </div>
+              </div>
+
+              {/* 4. Compact Phone Number with Contact Picker button */}
+              <div className="space-y-0.5">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[11px] font-bold text-[#79747E]">
                     Phone Number
                   </label>
                   <button
                     type="button"
                     onClick={() => setIsContactPickerOpen(true)}
-                    className="flex items-center gap-1.5 text-xs font-bold text-[#6750A4] bg-[#E8DEF8] px-2.5 py-0.5 rounded-full hover:bg-[#D0BCFF] transition"
+                    className="flex items-center gap-1 text-[10px] font-bold text-[#6750A4] bg-[#E8DEF8] px-2 py-0.5 rounded-lg hover:bg-[#D0BCFF] transition"
                   >
-                    <Smartphone className="w-3.5 h-3.5" />
+                    <Smartphone className="w-3 h-3" />
                     <span>Pick Contact</span>
                   </button>
                 </div>
-                <input
-                  type="text"
-                  value={fakeCallNumber}
-                  onChange={(e) => setFakeCallNumber(e.target.value)}
-                  placeholder="+91 98765 43210"
-                  className="w-full bg-[#F3EDF7] border border-[#79747E]/30 rounded-2xl px-3.5 py-2 text-sm font-mono font-semibold focus:outline-none focus:border-[#6750A4] focus:bg-[#FEF7FF] transition"
-                />
+                <div className="h-[42px] px-3 rounded-xl bg-[#F3EDF7] border border-[#E7E0EC] flex items-center focus-within:border-[#6750A4] focus-within:bg-[#FEF7FF] transition">
+                  <input
+                    type="text"
+                    value={fakeCallNumber}
+                    onChange={(e) => setFakeCallNumber(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    className="w-full bg-transparent text-[13px] font-mono font-semibold text-[#1D1B20] outline-none placeholder:text-[#79747E]/60"
+                  />
+                </div>
               </div>
 
-              {/* SIM Slot Selector */}
-              <div>
-                <label className="block text-xs font-bold text-[#49454F] mb-1">
+              {/* 5. Compact SIM Slot Selector */}
+              <div className="space-y-0.5">
+                <label className="block text-[11px] font-bold text-[#79747E]">
                   Incoming SIM Card
                 </label>
-                <div className="grid grid-cols-2 gap-2 bg-[#ECE6F0] p-1 rounded-2xl">
+                <div className="flex gap-1.5 bg-[#ECE6F0] p-1 rounded-xl">
                   <button
                     type="button"
                     disabled={!hasSim1}
                     onClick={() => setFakeCallSimSlot(1)}
-                    className={`py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 py-1.5 rounded-[10px] text-[11px] font-bold transition flex items-center justify-center gap-1.5 ${
                       !hasSim1
                         ? 'opacity-40 cursor-not-allowed text-[#79747E]'
                         : fakeCallSimSlot === 1
@@ -1745,7 +1793,7 @@ export default function App() {
                     type="button"
                     disabled={!hasSim2}
                     onClick={() => setFakeCallSimSlot(2)}
-                    className={`py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 py-1.5 rounded-[10px] text-[11px] font-bold transition flex items-center justify-center gap-1.5 ${
                       !hasSim2
                         ? 'opacity-40 cursor-not-allowed text-[#79747E]'
                         : fakeCallSimSlot === 2
@@ -1759,21 +1807,21 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Ring Delay (Presets + Custom Inputs) */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-[#49454F]">
-                    Ring Delay Timer
+              {/* 6. Compact Ring Delay (Presets + Custom Inputs) */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-bold text-[#79747E] tracking-wider uppercase">
+                    Trigger Delay
                   </label>
-                  <span className="text-[11px] font-bold text-amber-600">
+                  <span className="text-[11px] font-bold text-[#6750A4]">
                     {fakeCallDelaySec <= 3
-                      ? 'Ring in 3 seconds'
-                      : `Ring in ${Math.floor(fakeCallDelaySec / 60) > 0 ? `${Math.floor(fakeCallDelaySec / 60)}m ` : ''}${fakeCallDelaySec % 60}s`}
+                      ? 'Ringing in 3s'
+                      : `Ringing in ${Math.floor(fakeCallDelaySec / 60) > 0 ? `${Math.floor(fakeCallDelaySec / 60)}m ` : ''}${fakeCallDelaySec % 60}s`}
                   </span>
                 </div>
 
                 {/* Quick Presets */}
-                <div className="flex gap-1.5 overflow-x-auto pb-2 no-scrollbar">
+                <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
                   {[
                     { label: 'Now (3s)', sec: 3 },
                     { label: '10s', sec: 10 },
@@ -1789,10 +1837,10 @@ export default function App() {
                         setFakeCallMinsInput(Math.floor(preset.sec / 60).toString());
                         setFakeCallSecsInput((preset.sec % 60).toString());
                       }}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition ${
+                      className={`px-2.5 py-1 rounded-[10px] text-[11px] font-bold shrink-0 transition border ${
                         fakeCallDelaySec === preset.sec
-                          ? 'bg-[#6750A4] text-white shadow-xs'
-                          : 'bg-[#ECE6F0] text-[#49454F] hover:bg-[#E8DEF8]'
+                          ? 'bg-[#6750A4] text-white border-[#6750A4] shadow-xs'
+                          : 'bg-[#ECE6F0] text-[#49454F] border-[#E7E0EC] hover:bg-[#E8DEF8]'
                       }`}
                     >
                       {preset.label}
@@ -1801,9 +1849,9 @@ export default function App() {
                 </div>
 
                 {/* Custom Min / Sec Inputs */}
-                <div className="grid grid-cols-2 gap-2 bg-[#F3EDF7] p-2.5 rounded-2xl border border-[#E7E0EC]">
+                <div className="grid grid-cols-2 gap-2 bg-[#F3EDF7] p-2 rounded-xl border border-[#E7E0EC]">
                   <div>
-                    <label className="block text-[10px] font-bold text-[#79747E] mb-1">Minutes</label>
+                    <label className="block text-[10px] font-bold text-[#79747E] mb-0.5">Minutes</label>
                     <input
                       type="number"
                       min="0"
@@ -1816,11 +1864,11 @@ export default function App() {
                         const s = parseInt(fakeCallSecsInput || '0', 10) || 0;
                         setFakeCallDelaySec(Math.max(1, m * 60 + s));
                       }}
-                      className="w-full bg-[#FEF7FF] border border-[#79747E]/30 rounded-xl px-3 py-1.5 text-xs font-mono font-bold text-[#1D1B20] focus:outline-none focus:border-[#6750A4]"
+                      className="w-full h-[32px] bg-[#FEF7FF] border border-[#79747E]/30 rounded-lg px-2 text-xs font-mono font-bold text-[#1D1B20] focus:outline-none focus:border-[#6750A4]"
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-[#79747E] mb-1">Seconds</label>
+                    <label className="block text-[10px] font-bold text-[#79747E] mb-0.5">Seconds</label>
                     <input
                       type="number"
                       min="0"
@@ -1833,17 +1881,17 @@ export default function App() {
                         const s = parseInt(val || '0', 10) || 0;
                         setFakeCallDelaySec(Math.max(1, m * 60 + s));
                       }}
-                      className="w-full bg-[#FEF7FF] border border-[#79747E]/30 rounded-xl px-3 py-1.5 text-xs font-mono font-bold text-[#1D1B20] focus:outline-none focus:border-[#6750A4]"
+                      className="w-full h-[32px] bg-[#FEF7FF] border border-[#79747E]/30 rounded-lg px-2 text-xs font-mono font-bold text-[#1D1B20] focus:outline-none focus:border-[#6750A4]"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Simulator Options Switches */}
-              <div className="space-y-2 bg-[#F3EDF7] p-3 rounded-2xl border border-[#E7E0EC]">
+              {/* 7. Simulator Options Switches */}
+              <div className="space-y-1.5 bg-[#F3EDF7] p-2.5 rounded-xl border border-[#E7E0EC]">
                 <label className="flex items-center justify-between cursor-pointer">
                   <div className="flex items-center gap-2">
-                    <Volume2 className="w-4 h-4 text-[#6750A4]" />
+                    <Volume2 className="w-3.5 h-3.5 text-[#6750A4]" />
                     <span className="text-xs font-bold text-[#1D1B20]">Play Ringtone Sound</span>
                   </div>
                   <input
@@ -1856,7 +1904,7 @@ export default function App() {
 
                 <label className="flex items-center justify-between cursor-pointer">
                   <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4 text-amber-600" />
+                    <Zap className="w-3.5 h-3.5 text-amber-600" />
                     <span className="text-xs font-bold text-[#1D1B20]">Simulate Vibration</span>
                   </div>
                   <input
@@ -1869,7 +1917,7 @@ export default function App() {
 
                 <label className="flex items-center justify-between cursor-pointer">
                   <div className="flex items-center gap-2">
-                    <History className="w-4 h-4 text-emerald-600" />
+                    <History className="w-3.5 h-3.5 text-emerald-600" />
                     <span className="text-xs font-bold text-[#1D1B20]">Auto-Save to Call History on End</span>
                   </div>
                   <input
@@ -1881,12 +1929,12 @@ export default function App() {
                 </label>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-2 pt-2">
+              {/* 8. Action Buttons */}
+              <div className="flex gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => setIsFakeCallModalOpen(false)}
-                  className="flex-1 py-3 text-xs font-bold text-[#49454F] bg-[#ECE6F0] hover:bg-[#E8DEF8] rounded-full transition"
+                  className="flex-1 py-2.5 text-xs font-bold text-[#49454F] bg-[#ECE6F0] hover:bg-[#E8DEF8] rounded-full transition"
                 >
                   Cancel
                 </button>
@@ -1896,7 +1944,7 @@ export default function App() {
                     setIsFakeCallModalOpen(false);
                     setFakeCallCountdown(fakeCallDelaySec);
                   }}
-                  className="flex-[2] py-3 text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-full shadow-md flex items-center justify-center gap-2 transition"
+                  className="flex-[2] py-2.5 text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-full shadow-md flex items-center justify-center gap-1.5 transition"
                 >
                   <Zap className="w-4 h-4 fill-white" />
                   <span>Schedule Fake Call</span>
@@ -1906,96 +1954,237 @@ export default function App() {
           </div>
         )}
 
-        {/* Fake Incoming Call Fullscreen Screen */}
+        {/* Fake Incoming Call Fullscreen Screen (Pixel / Samsung / HyperOS / iOS Clones) */}
         {fakeCallState === 'incoming' && (
-          <div className="absolute inset-0 bg-[#121214] text-white z-[60] flex flex-col justify-between p-8 animate-in fade-in zoom-in-95 duration-200 select-none">
-            {/* Top Status & SIM */}
-            <div className="flex flex-col items-center pt-6 space-y-2">
-              <div className="px-3.5 py-1 rounded-full bg-white/10 text-[11px] font-medium text-white/90 flex items-center gap-1.5 border border-white/10">
-                <Smartphone className="w-3.5 h-3.5 text-[#D0BCFF]" />
-                <span>Incoming call • SIM {fakeCallSimSlot}</span>
-              </div>
-
-              <div className="text-center pt-3">
-                <h2 className="text-2xl font-bold tracking-tight text-white">{fakeCallName}</h2>
-                <p className="text-xs text-[#CAC4D0] font-mono mt-1">{fakeCallNumber}</p>
-              </div>
-            </div>
-
-            {/* Center Avatar with Pulsing Rings */}
-            <div className="flex items-center justify-center py-4">
-              <div className="relative flex items-center justify-center">
-                <div className="absolute w-40 h-40 rounded-full bg-white/5 animate-ping duration-1000" />
-                <div className="absolute w-32 h-32 rounded-full bg-white/10 animate-pulse" />
-                <div className="relative w-24 h-24 rounded-full bg-gradient-to-tr from-[#6750A4] to-[#4F378B] flex items-center justify-center text-4xl font-black text-white shadow-2xl border-2 border-white/20">
-                  {fakeCallName.slice(0, 1).toUpperCase()}
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Actions: Decline and Answer */}
-            <div className="pb-6">
-              <div className="flex items-center justify-around px-4">
-                {/* Decline */}
-                <div className="flex flex-col items-center gap-2">
-                  <button
-                    onClick={() => setFakeCallState('idle')}
-                    style={{ width: '64px', height: '64px' }}
-                    className="rounded-full bg-[#BA1A1A] hover:bg-[#DC2626] flex items-center justify-center text-white shadow-xl shadow-red-950/50 transform active:scale-90 transition"
-                  >
-                    <Phone className="w-7 h-7 fill-white text-white rotate-[135deg]" />
-                  </button>
-                  <span className="text-xs font-medium text-[#CAC4D0]">Decline</span>
+          <>
+            {fakeCallBrand === 'samsung' ? (
+              // Samsung One UI Authentic Incoming Screen
+              <div className="absolute inset-0 bg-gradient-to-b from-[#132039] to-[#0C1424] text-white z-[60] flex flex-col justify-between p-7 select-none animate-in fade-in duration-200">
+                <div className="flex flex-col items-center pt-8 text-center space-y-1">
+                  <h2 className="text-[28px] font-bold text-white tracking-tight">{fakeCallName}</h2>
+                  <p className="text-[13px] text-[#93C5FD] font-medium">Jio 5G (SIM {fakeCallSimSlot}) • {fakeCallNumber}</p>
                 </div>
 
-                {/* Answer */}
-                <div className="flex flex-col items-center gap-2">
-                  <button
-                    onClick={() => {
-                      setFakeCallState('active');
-                      setFakeCallElapsedSec(0);
-                    }}
-                    style={{ width: '64px', height: '64px' }}
-                    className="rounded-full bg-[#1E8E3E] hover:bg-emerald-600 flex items-center justify-center text-white shadow-xl shadow-emerald-950/50 transform active:scale-90 transition animate-bounce"
-                  >
-                    <Phone className="w-7 h-7 fill-white text-white" />
-                  </button>
-                  <span className="text-xs font-medium text-[#CAC4D0]">Answer</span>
+                <div className="flex items-center justify-center">
+                  <div className="w-[100px] h-[100px] rounded-full bg-white/20 border-[1.5px] border-white/30 text-white text-4xl font-bold flex items-center justify-center shadow-2xl backdrop-blur-md">
+                    {fakeCallName.slice(0, 1).toUpperCase()}
+                  </div>
+                </div>
+
+                <div className="pb-8 px-4 flex items-center justify-between">
+                  <div className="flex flex-col items-center gap-1.5">
+                    <button
+                      onClick={() => {
+                        setFakeCallState('active');
+                        setFakeCallElapsedSec(0);
+                      }}
+                      className="w-16 h-16 rounded-full bg-[#22C55E] hover:bg-emerald-600 flex items-center justify-center text-white shadow-xl shadow-emerald-950/50 transform active:scale-90 transition animate-pulse"
+                    >
+                      <Phone className="w-7 h-7 fill-white text-white" />
+                    </button>
+                    <span className="text-xs font-semibold text-white">Answer</span>
+                  </div>
+
+                  <div className="flex flex-col items-center gap-1.5">
+                    <button
+                      onClick={() => setFakeCallState('idle')}
+                      className="w-16 h-16 rounded-full bg-[#EF4444] hover:bg-red-600 flex items-center justify-center text-white shadow-xl shadow-red-950/50 transform active:scale-90 transition"
+                    >
+                      <Phone className="w-7 h-7 fill-white text-white rotate-[135deg]" />
+                    </button>
+                    <span className="text-xs font-semibold text-white">Decline</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            ) : fakeCallBrand === 'hyperos' ? (
+              // Xiaomi HyperOS Authentic Incoming Screen
+              <div className="absolute inset-0 bg-[#17181A] text-white z-[60] flex flex-col justify-between p-7 select-none animate-in fade-in duration-200">
+                <div className="flex flex-col items-center pt-8 text-center space-y-1">
+                  <h2 className="text-[26px] font-bold text-white tracking-tight">{fakeCallName}</h2>
+                  <p className="text-[13px] text-[#A1A1AA] font-medium">Mobile | India • SIM {fakeCallSimSlot}</p>
+                  <p className="text-xs text-[#71717A] font-mono">{fakeCallNumber}</p>
+                </div>
+
+                <div className="flex items-center justify-center">
+                  <div className="w-24 h-24 rounded-full bg-[#27272A] border-2 border-[#3F3F46] text-white text-4xl font-bold flex items-center justify-center shadow-xl">
+                    {fakeCallName.slice(0, 1).toUpperCase()}
+                  </div>
+                </div>
+
+                <div className="pb-8 px-5 flex items-center justify-between">
+                  <div className="flex flex-col items-center gap-1.5">
+                    <button
+                      onClick={() => setFakeCallState('idle')}
+                      className="w-16 h-16 rounded-full bg-[#EF4444] hover:bg-red-600 flex items-center justify-center text-white shadow-xl transform active:scale-90 transition"
+                    >
+                      <Phone className="w-7 h-7 fill-white text-white rotate-[135deg]" />
+                    </button>
+                    <span className="text-[11px] font-medium text-[#A1A1AA]">Decline</span>
+                  </div>
+
+                  <div className="flex flex-col items-center gap-1.5">
+                    <button
+                      onClick={() => {
+                        setFakeCallState('active');
+                        setFakeCallElapsedSec(0);
+                      }}
+                      className="w-16 h-16 rounded-full bg-[#10B981] hover:bg-emerald-600 flex items-center justify-center text-white shadow-xl transform active:scale-90 transition animate-pulse"
+                    >
+                      <Phone className="w-7 h-7 fill-white text-white" />
+                    </button>
+                    <span className="text-[11px] font-medium text-[#A1A1AA]">Answer</span>
+                  </div>
+                </div>
+              </div>
+            ) : fakeCallBrand === 'ios' ? (
+              // Apple iPhone iOS Authentic Incoming Screen
+              <div className="absolute inset-0 bg-black text-white z-[60] flex flex-col justify-between p-7 select-none animate-in fade-in duration-200">
+                <div className="flex flex-col items-center pt-10 text-center space-y-1">
+                  <h2 className="text-[28px] font-normal text-white tracking-tight">{fakeCallName}</h2>
+                  <p className="text-sm text-[#8E8E93] font-normal">mobile • {fakeCallNumber}</p>
+                </div>
+
+                <div className="flex items-center justify-center">
+                  <div className="w-24 h-24 rounded-full bg-[#3A3A3C] text-white text-4xl font-medium flex items-center justify-center shadow-xl">
+                    {fakeCallName.slice(0, 1).toUpperCase()}
+                  </div>
+                </div>
+
+                <div className="pb-10 px-5 flex items-center justify-between">
+                  <div className="flex flex-col items-center gap-2">
+                    <button
+                      onClick={() => setFakeCallState('idle')}
+                      className="w-[68px] h-[68px] rounded-full bg-[#FF3B30] hover:bg-red-600 flex items-center justify-center text-white shadow-xl transform active:scale-90 transition"
+                    >
+                      <Phone className="w-8 h-8 fill-white text-white rotate-[135deg]" />
+                    </button>
+                    <span className="text-xs font-normal text-white">decline</span>
+                  </div>
+
+                  <div className="flex flex-col items-center gap-2">
+                    <button
+                      onClick={() => {
+                        setFakeCallState('active');
+                        setFakeCallElapsedSec(0);
+                      }}
+                      className="w-[68px] h-[68px] rounded-full bg-[#34C759] hover:bg-emerald-500 flex items-center justify-center text-white shadow-xl transform active:scale-90 transition animate-pulse"
+                    >
+                      <Phone className="w-8 h-8 fill-white text-white" />
+                    </button>
+                    <span className="text-xs font-normal text-white">accept</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Google Pixel Material You Standard Incoming Screen
+              <div className="absolute inset-0 bg-[#121214] text-white z-[60] flex flex-col justify-between p-7 select-none animate-in fade-in duration-200">
+                <div className="flex flex-col items-center pt-6 space-y-2">
+                  <div className="px-3.5 py-1 rounded-full bg-[#2B2930] text-[11px] font-bold text-[#D0BCFF] flex items-center gap-1.5 border border-white/5">
+                    <Smartphone className="w-3.5 h-3.5 text-[#D0BCFF]" />
+                    <span>Incoming call • SIM {fakeCallSimSlot}</span>
+                  </div>
+
+                  <div className="text-center pt-2">
+                    <h2 className="text-2xl font-bold tracking-tight text-white">{fakeCallName}</h2>
+                    <p className="text-xs text-[#CAC4D0] font-mono mt-1">{fakeCallNumber}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-center py-4">
+                  <div className="relative flex items-center justify-center">
+                    <div className="absolute w-36 h-36 rounded-full bg-white/5 animate-ping duration-1000" />
+                    <div className="absolute w-28 h-28 rounded-full bg-white/10 animate-pulse" />
+                    <div className="relative w-22 h-22 rounded-full bg-gradient-to-tr from-[#6750A4] to-[#4F378B] flex items-center justify-center text-3xl font-black text-white shadow-2xl border-2 border-white/20">
+                      {fakeCallName.slice(0, 1).toUpperCase()}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pb-8 px-4 flex items-center justify-around">
+                  <div className="flex flex-col items-center gap-1.5">
+                    <button
+                      onClick={() => setFakeCallState('idle')}
+                      className="w-16 h-16 rounded-full bg-[#BA1A1A] hover:bg-[#DC2626] flex items-center justify-center text-white shadow-xl shadow-red-950/50 transform active:scale-90 transition"
+                    >
+                      <Phone className="w-7 h-7 fill-white text-white rotate-[135deg]" />
+                    </button>
+                    <span className="text-xs font-medium text-[#CAC4D0]">Decline</span>
+                  </div>
+
+                  <div className="flex flex-col items-center gap-1.5">
+                    <button
+                      onClick={() => {
+                        setFakeCallState('active');
+                        setFakeCallElapsedSec(0);
+                      }}
+                      className="w-16 h-16 rounded-full bg-[#1E8E3E] hover:bg-emerald-600 flex items-center justify-center text-white shadow-xl shadow-emerald-950/50 transform active:scale-90 transition animate-bounce"
+                    >
+                      <Phone className="w-7 h-7 fill-white text-white" />
+                    </button>
+                    <span className="text-xs font-medium text-[#CAC4D0]">Answer</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
 
-        {/* Authentic Google Phone In-Call Screen */}
+        {/* Authentic In-Call Screen (Pixel / Samsung / HyperOS / iOS Clones) */}
         {fakeCallState === 'active' && (
-          <div className="absolute inset-0 bg-[#121214] text-white z-[60] flex flex-col justify-between p-6 animate-in fade-in duration-150 select-none">
-            {/* Top Contact Info */}
-            <div className="flex flex-col items-center pt-6 space-y-1">
-              <div className="px-3 py-0.5 rounded-full bg-white/10 text-[11px] font-medium text-white/80 flex items-center gap-1.5 mb-2">
-                <Smartphone className="w-3 h-3 text-[#D0BCFF]" />
-                <span>SIM {fakeCallSimSlot} • HD</span>
+          <div
+            className={`absolute inset-0 text-white z-[60] flex flex-col justify-between p-6 animate-in fade-in duration-150 select-none ${
+              fakeCallBrand === 'samsung'
+                ? 'bg-gradient-to-b from-[#132039] to-[#0C1424]'
+                : fakeCallBrand === 'hyperos'
+                ? 'bg-[#17181A]'
+                : fakeCallBrand === 'ios'
+                ? 'bg-black'
+                : 'bg-[#121214]'
+            }`}
+          >
+            {/* Top Header - Authentic to Brand */}
+            {fakeCallBrand === 'samsung' ? (
+              <div className="flex flex-col items-center pt-6 space-y-1">
+                <h2 className="text-[26px] font-bold text-white tracking-tight">{fakeCallName}</h2>
+                <p className="text-[13px] text-[#93C5FD]">Jio 5G (SIM {fakeCallSimSlot}) • {fakeCallNumber}</p>
+                <div className="text-base font-semibold pt-1">
+                  {isHold ? <span className="text-amber-400 font-bold">Call on hold</span> : <span className="text-[#38BDF8]">{formatCallTimer(fakeCallElapsedSec)}</span>}
+                </div>
               </div>
-
-              {/* Large Contact Avatar */}
-              <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-[#6750A4] to-[#4F378B] flex items-center justify-center text-3xl font-black text-white shadow-lg border border-white/10 mb-2">
-                {fakeCallName.slice(0, 1).toUpperCase()}
+            ) : fakeCallBrand === 'hyperos' ? (
+              <div className="flex flex-col items-center pt-6 space-y-1">
+                <h2 className="text-2xl font-bold text-white tracking-tight">{fakeCallName}</h2>
+                <p className="text-xs text-[#A1A1AA]">Mobile | India • SIM {fakeCallSimSlot}</p>
+                <div className="text-sm font-bold pt-1">
+                  {isHold ? <span className="text-amber-400 font-bold">Call on hold</span> : <span className="text-[#22C55E]">{formatCallTimer(fakeCallElapsedSec)}</span>}
+                </div>
               </div>
-
-              <h2 className="text-2xl font-bold tracking-tight text-white">{fakeCallName}</h2>
-              <p className="text-xs text-[#CAC4D0] font-mono">{fakeCallNumber}</p>
-
-              {/* Duration Timer or Status */}
-              <div className="text-sm font-medium text-[#C4C7C5] pt-1">
-                {isHold ? (
-                  <span className="text-amber-400 font-bold">Call on hold</span>
-                ) : (
-                  formatDuration(fakeCallElapsedSec)
-                )}
+            ) : fakeCallBrand === 'ios' ? (
+              <div className="flex flex-col items-center pt-8 space-y-1">
+                <h2 className="text-[26px] font-normal text-white tracking-tight">{fakeCallName}</h2>
+                <div className="text-sm text-[#8E8E93] font-normal pt-0.5">
+                  {isHold ? <span className="text-amber-400 font-semibold">call on hold</span> : formatCallTimer(fakeCallElapsedSec)}
+                </div>
               </div>
-            </div>
+            ) : (
+              // Google Pixel Header
+              <div className="flex flex-col items-center pt-3 space-y-1">
+                <div className="px-2.5 py-0.5 rounded-xl bg-[#2B2930] text-[11px] font-bold text-[#D0BCFF] flex items-center gap-1.5 mb-1.5">
+                  <Smartphone className="w-3 h-3 text-[#D0BCFF]" />
+                  <span>SIM {fakeCallSimSlot} • HD</span>
+                </div>
+                <div className="w-[72px] h-[72px] rounded-full bg-gradient-to-tr from-[#6750A4] to-[#4F378B] flex items-center justify-center text-3xl font-black text-white shadow-lg border border-white/10 mb-1">
+                  {fakeCallName.slice(0, 1).toUpperCase()}
+                </div>
+                <h2 className="text-[22px] font-bold tracking-tight text-white">{fakeCallName}</h2>
+                <p className="text-[13px] text-[#CAC4D0] font-mono">{fakeCallNumber}</p>
+                <div className="text-sm font-medium text-[#C4C7C5] pt-0.5">
+                  {isHold ? <span className="text-amber-400 font-bold">Call on hold</span> : formatCallTimer(fakeCallElapsedSec)}
+                </div>
+              </div>
+            )}
 
-            {/* Center: DTMF Keypad or Authentic 6-Button Grid */}
+            {/* Center Area: DTMF Keypad or Authentic Brand 6-Button Grid */}
             {isKeypadOpen ? (
               <div className="bg-[#1E1F22] rounded-[32px] p-4 border border-white/10 my-auto shadow-2xl">
                 <div className="text-center pb-2">
@@ -2047,16 +2236,22 @@ export default function App() {
                 <div className="flex flex-col items-center gap-1.5">
                   <button
                     onClick={() => setIsMuted(!isMuted)}
-                    className={`w-14 h-14 rounded-2xl flex items-center justify-center transition shadow-sm ${
+                    className={`w-14 h-14 ${
+                      fakeCallBrand === 'pixel' ? 'rounded-[18px]' : 'rounded-full'
+                    } flex items-center justify-center transition shadow-sm ${
                       isMuted
                         ? 'bg-white text-black'
+                        : fakeCallBrand === 'ios'
+                        ? 'bg-white/15 text-white hover:bg-white/25'
+                        : fakeCallBrand === 'samsung'
+                        ? 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-md'
                         : 'bg-[#2B2930] text-[#E6E1E5] hover:bg-[#36343B]'
                     }`}
                   >
                     {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
                   </button>
                   <span className="text-[11px] font-medium text-[#CAC4D0]">
-                    {isMuted ? 'Unmute' : 'Mute'}
+                    {fakeCallBrand === 'ios' ? 'mute' : isMuted ? 'Unmute' : 'Mute'}
                   </span>
                 </div>
 
@@ -2064,7 +2259,15 @@ export default function App() {
                 <div className="flex flex-col items-center gap-1.5">
                   <button
                     onClick={() => setIsKeypadOpen(true)}
-                    className="w-14 h-14 rounded-2xl bg-[#2B2930] text-[#E6E1E5] hover:bg-[#36343B] flex items-center justify-center transition shadow-sm"
+                    className={`w-14 h-14 ${
+                      fakeCallBrand === 'pixel' ? 'rounded-[18px]' : 'rounded-full'
+                    } flex items-center justify-center transition shadow-sm ${
+                      fakeCallBrand === 'ios'
+                        ? 'bg-white/15 text-white hover:bg-white/25'
+                        : fakeCallBrand === 'samsung'
+                        ? 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-md'
+                        : 'bg-[#2B2930] text-[#E6E1E5] hover:bg-[#36343B]'
+                    }`}
                   >
                     <div className="w-5 h-5 grid grid-cols-3 gap-0.5 items-center justify-center">
                       {Array.from({ length: 9 }).map((_, i) => (
@@ -2072,72 +2275,108 @@ export default function App() {
                       ))}
                     </div>
                   </button>
-                  <span className="text-[11px] font-medium text-[#CAC4D0]">Keypad</span>
+                  <span className="text-[11px] font-medium text-[#CAC4D0]">
+                    {fakeCallBrand === 'ios' ? 'keypad' : 'Keypad'}
+                  </span>
                 </div>
 
                 {/* 3. Speaker */}
                 <div className="flex flex-col items-center gap-1.5">
                   <button
                     onClick={() => setIsSpeakerOn(!isSpeakerOn)}
-                    className={`w-14 h-14 rounded-2xl flex items-center justify-center transition shadow-sm ${
+                    className={`w-14 h-14 ${
+                      fakeCallBrand === 'pixel' ? 'rounded-[18px]' : 'rounded-full'
+                    } flex items-center justify-center transition shadow-sm ${
                       isSpeakerOn
                         ? 'bg-white text-black'
+                        : fakeCallBrand === 'ios'
+                        ? 'bg-white/15 text-white hover:bg-white/25'
+                        : fakeCallBrand === 'samsung'
+                        ? 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-md'
                         : 'bg-[#2B2930] text-[#E6E1E5] hover:bg-[#36343B]'
                     }`}
                   >
                     {isSpeakerOn ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
                   </button>
-                  <span className="text-[11px] font-medium text-[#CAC4D0]">Speaker</span>
+                  <span className="text-[11px] font-medium text-[#CAC4D0]">
+                    {fakeCallBrand === 'ios' ? 'audio' : 'Speaker'}
+                  </span>
                 </div>
 
                 {/* 4. Add call */}
                 <div className="flex flex-col items-center gap-1.5">
                   <button
-                    onClick={() => alert('Add call feature')}
-                    className="w-14 h-14 rounded-2xl bg-[#2B2930] text-[#E6E1E5] hover:bg-[#36343B] flex items-center justify-center transition shadow-sm"
+                    onClick={() => {}}
+                    className={`w-14 h-14 ${
+                      fakeCallBrand === 'pixel' ? 'rounded-[18px]' : 'rounded-full'
+                    } flex items-center justify-center transition shadow-sm ${
+                      fakeCallBrand === 'ios'
+                        ? 'bg-white/15 text-white hover:bg-white/25'
+                        : fakeCallBrand === 'samsung'
+                        ? 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-md'
+                        : 'bg-[#2B2930] text-[#E6E1E5] hover:bg-[#36343B]'
+                    }`}
                   >
                     <Plus className="w-6 h-6" />
                   </button>
-                  <span className="text-[11px] font-medium text-[#CAC4D0]">Add call</span>
-                </div>
-
-                {/* 5. Hold */}
-                <div className="flex flex-col items-center gap-1.5">
-                  <button
-                    onClick={() => setIsHold(!isHold)}
-                    className={`w-14 h-14 rounded-2xl flex items-center justify-center transition shadow-sm ${
-                      isHold
-                        ? 'bg-amber-400 text-black'
-                        : 'bg-[#2B2930] text-[#E6E1E5] hover:bg-[#36343B]'
-                    }`}
-                  >
-                    <Pause className="w-6 h-6" />
-                  </button>
                   <span className="text-[11px] font-medium text-[#CAC4D0]">
-                    {isHold ? 'Unhold' : 'Hold'}
+                    {fakeCallBrand === 'ios' ? 'add call' : 'Add call'}
                   </span>
                 </div>
 
-                {/* 6. Record */}
+                {/* 5. Hold / FaceTime */}
                 <div className="flex flex-col items-center gap-1.5">
                   <button
-                    onClick={() => setIsRecording(!isRecording)}
-                    className={`w-14 h-14 rounded-2xl flex items-center justify-center transition shadow-sm ${
-                      isRecording
-                        ? 'bg-rose-500 text-white'
+                    onClick={() => setIsHold(!isHold)}
+                    className={`w-14 h-14 ${
+                      fakeCallBrand === 'pixel' ? 'rounded-[18px]' : 'rounded-full'
+                    } flex items-center justify-center transition shadow-sm ${
+                      isHold
+                        ? 'bg-amber-400 text-black'
+                        : fakeCallBrand === 'ios'
+                        ? 'bg-white/15 text-white hover:bg-white/25'
+                        : fakeCallBrand === 'samsung'
+                        ? 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-md'
                         : 'bg-[#2B2930] text-[#E6E1E5] hover:bg-[#36343B]'
                     }`}
                   >
-                    <Disc className={`w-6 h-6 ${isRecording ? 'animate-spin' : ''}`} />
+                    {fakeCallBrand === 'ios' ? <Video className="w-6 h-6" /> : <Pause className="w-6 h-6" />}
                   </button>
                   <span className="text-[11px] font-medium text-[#CAC4D0]">
-                    {isRecording ? 'Recording' : 'Record'}
+                    {fakeCallBrand === 'ios' ? 'FaceTime' : isHold ? 'Unhold' : 'Hold'}
+                  </span>
+                </div>
+
+                {/* 6. Record / Contacts */}
+                <div className="flex flex-col items-center gap-1.5">
+                  <button
+                    onClick={() => setIsRecording(!isRecording)}
+                    className={`w-14 h-14 ${
+                      fakeCallBrand === 'pixel' ? 'rounded-[18px]' : 'rounded-full'
+                    } flex items-center justify-center transition shadow-sm ${
+                      isRecording
+                        ? 'bg-rose-500 text-white'
+                        : fakeCallBrand === 'ios'
+                        ? 'bg-white/15 text-white hover:bg-white/25'
+                        : fakeCallBrand === 'samsung'
+                        ? 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-md'
+                        : 'bg-[#2B2930] text-[#E6E1E5] hover:bg-[#36343B]'
+                    }`}
+                  >
+                    {fakeCallBrand === 'ios' ? (
+                      <Users className="w-6 h-6" />
+                    ) : (
+                      <Disc className={`w-6 h-6 ${isRecording ? 'animate-spin' : ''}`} />
+                    )}
+                  </button>
+                  <span className="text-[11px] font-medium text-[#CAC4D0]">
+                    {fakeCallBrand === 'ios' ? 'contacts' : isRecording ? 'Recording' : 'Record'}
                   </span>
                 </div>
               </div>
             )}
 
-            {/* Bottom End Call (Prominent Google Phone Red Circle) */}
+            {/* Bottom End Call (Brand Authentic) */}
             <div className="pb-8 flex justify-center">
               <button
                 onClick={() => {
@@ -2159,8 +2398,13 @@ export default function App() {
                   setIsHold(false);
                   setIsRecording(false);
                 }}
-                style={{ width: '68px', height: '68px' }}
-                className="rounded-full bg-[#BA1A1A] hover:bg-[#DC2626] flex items-center justify-center text-white shadow-xl shadow-red-950/50 transform active:scale-95 transition-all"
+                className={`flex items-center justify-center text-white shadow-xl shadow-red-950/50 transform active:scale-95 transition-all ${
+                  fakeCallBrand === 'samsung'
+                    ? 'w-[76px] h-[54px] rounded-[27px] bg-[#E11D48] hover:bg-rose-700'
+                    : fakeCallBrand === 'ios'
+                    ? 'w-[68px] h-[68px] rounded-full bg-[#FF3B30] hover:bg-red-600'
+                    : 'w-[68px] h-[68px] rounded-full bg-[#BA1A1A] hover:bg-[#DC2626]'
+                }`}
                 title="End Call"
               >
                 <Phone className="w-8 h-8 fill-white text-white rotate-[135deg]" />
