@@ -163,7 +163,7 @@ fun CallLogEditorApp(repository: CallLogRepository) {
     // Fake Call Simulator States
     var showTopMenu by remember { mutableStateOf(false) }
     var isFakeCallSetupOpen by remember { mutableStateOf(false) }
-    var fakeCallName by remember { mutableStateOf("Boss 🏢") }
+    var fakeCallName by remember { mutableStateOf("Boss") }
     var fakeCallNumber by remember { mutableStateOf("+91 98765 43210") }
     var fakeCallSimSlot by remember { mutableStateOf(deviceSimState.defaultSlot) }
     var fakeCallBrand by remember { mutableStateOf("pixel") }
@@ -2681,7 +2681,7 @@ fun FakeCallBottomSheet(
     var delaySecsText by remember { mutableStateOf("3") }
     var selectedPresetSec by remember { mutableStateOf<Int?>(3) }
 
-    val namePresets = listOf("Boss 🏢", "Mom ❤️", "Doctor 🩺", "Pizza 🍕", "Police 🚓")
+    val namePresets = listOf("Boss", "Mom", "Doctor", "Pizza", "Police")
 
     // Contact Picker Launcher
     val contactPickerLauncher = rememberLauncherForActivityResult(
@@ -2776,11 +2776,11 @@ fun FakeCallBottomSheet(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     listOf(
-                        Triple("pixel", "Google Pixel", "📱"),
-                        Triple("samsung", "Samsung One UI", "🌌"),
-                        Triple("hyperos", "Xiaomi HyperOS", "⚡"),
-                        Triple("ios", "Apple iPhone", "🍎")
-                    ).forEach { (bId, bName, bIcon) ->
+                        Pair("pixel", "Google Pixel"),
+                        Pair("samsung", "Samsung One UI"),
+                        Pair("hyperos", "Xiaomi HyperOS"),
+                        Pair("ios", "Apple iPhone")
+                    ).forEach { (bId, bName) ->
                         val isSelected = selectedBrand == bId
                         Surface(
                             onClick = { selectedBrand = bId },
@@ -2788,19 +2788,13 @@ fun FakeCallBottomSheet(
                             color = if (isSelected) LilacPrimary else LilacSurfaceVariant,
                             border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, LilacBorder)
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                            ) {
-                                Text(bIcon, fontSize = 12.sp)
-                                Spacer(modifier = Modifier.width(5.dp))
-                                Text(
-                                    text = bName,
-                                    fontSize = 11.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) Color.White else LilacText
-                                )
-                            }
+                            Text(
+                                text = bName,
+                                fontSize = 11.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                color = if (isSelected) Color.White else LilacText,
+                                modifier = Modifier.padding(horizontal = 11.dp, vertical = 6.dp)
+                            )
                         }
                     }
                 }
@@ -2827,11 +2821,11 @@ fun FakeCallBottomSheet(
                             onClick = {
                                 name = preset
                                 when (preset) {
-                                    "Boss 🏢" -> number = "+91 98123 45678"
-                                    "Mom ❤️" -> number = "+91 98980 12345"
-                                    "Doctor 🩺" -> number = "+91 98234 56789"
-                                    "Pizza 🍕" -> number = "+91 98765 00000"
-                                    "Police 🚓" -> number = "112"
+                                    "Boss" -> number = "+91 98123 45678"
+                                    "Mom" -> number = "+91 98980 12345"
+                                    "Doctor" -> number = "+91 98234 56789"
+                                    "Pizza" -> number = "+91 98765 00000"
+                                    "Police" -> number = "112"
                                 }
                             },
                             shape = RoundedCornerShape(10.dp),

@@ -233,11 +233,11 @@ function formatFullDateTime(date: Date): string {
 }
 
 const FAKE_CALL_PRESETS = [
-  { name: 'Boss 🏢', number: '+91 98123 45678' },
-  { name: 'Mom ❤️', number: '+91 98980 12345' },
-  { name: 'Doctor 🩺', number: '+91 98234 56789' },
-  { name: 'Pizza 🍕', number: '+91 98765 00000' },
-  { name: 'Police 🚓', number: '112' },
+  { name: 'Boss', number: '+91 98123 45678' },
+  { name: 'Mom', number: '+91 98980 12345' },
+  { name: 'Doctor', number: '+91 98234 56789' },
+  { name: 'Pizza', number: '+91 98765 00000' },
+  { name: 'Police', number: '112' },
 ];
 
 const DTMF_FREQS: Record<string, [number, number]> = {
@@ -330,7 +330,7 @@ export default function App() {
   // Fake Call Simulator States
   const [isFakeCallModalOpen, setIsFakeCallModalOpen] = useState(false);
   const [fakeCallBrand, setFakeCallBrand] = useState<'pixel' | 'samsung' | 'hyperos' | 'ios'>('pixel');
-  const [fakeCallName, setFakeCallName] = useState('Boss 🏢');
+  const [fakeCallName, setFakeCallName] = useState('Boss');
   const [fakeCallNumber, setFakeCallNumber] = useState('+91 98765 43210');
   const [fakeCallSimSlot, setFakeCallSimSlot] = useState<1 | 2>(defaultSlot);
   const [fakeCallDelaySec, setFakeCallDelaySec] = useState<number>(3);
@@ -1682,10 +1682,10 @@ export default function App() {
                 </label>
                 <div className="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
                   {[
-                    { id: 'pixel', name: 'Google Pixel', icon: '📱' },
-                    { id: 'samsung', name: 'Samsung One UI', icon: '🌌' },
-                    { id: 'hyperos', name: 'Xiaomi HyperOS', icon: '⚡' },
-                    { id: 'ios', name: 'Apple iPhone', icon: '🍎' },
+                    { id: 'pixel', name: 'Google Pixel' },
+                    { id: 'samsung', name: 'Samsung One UI' },
+                    { id: 'hyperos', name: 'Xiaomi HyperOS' },
+                    { id: 'ios', name: 'Apple iPhone' },
                   ].map((b) => {
                     const isSelected = fakeCallBrand === b.id;
                     return (
@@ -1693,13 +1693,12 @@ export default function App() {
                         key={b.id}
                         type="button"
                         onClick={() => setFakeCallBrand(b.id as any)}
-                        className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold shrink-0 transition flex items-center gap-1.5 border ${
+                        className={`px-3 py-1.5 rounded-xl text-[11px] font-bold shrink-0 transition flex items-center border ${
                           isSelected
                             ? 'bg-[#6750A4] text-white border-[#6750A4] shadow-xs'
                             : 'bg-[#ECE6F0] text-[#1D1B20] border-[#E7E0EC] hover:bg-[#E8DEF8]'
                         }`}
                       >
-                        <span className="text-xs">{b.icon}</span>
                         <span>{b.name}</span>
                       </button>
                     );
@@ -1723,7 +1722,7 @@ export default function App() {
                           setFakeCallName(preset.name);
                           setFakeCallNumber(preset.number);
                         }}
-                        className={`px-2.5 py-1 rounded-[10px] text-[11px] font-bold shrink-0 transition flex items-center gap-1 border ${
+                        className={`px-3 py-1.5 rounded-[10px] text-[11px] font-bold shrink-0 transition flex items-center border ${
                           isSelected
                             ? 'bg-[#6750A4] text-white border-[#6750A4] shadow-xs'
                             : 'bg-[#ECE6F0] text-[#1D1B20] border-[#E7E0EC] hover:bg-[#E8DEF8]'
