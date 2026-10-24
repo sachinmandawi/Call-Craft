@@ -37,7 +37,8 @@ import {
   Download,
   RefreshCw,
   Sparkles,
-  Mail
+  Mail,
+  Github
 } from 'lucide-react';
 
 export type CallType = 1 | 2 | 3 | 5; // 1: Incoming, 2: Outgoing, 3: Missed, 5: Rejected
@@ -1322,7 +1323,7 @@ export default function App() {
                 </span>
 
                 <div className="bg-[#FEF7FF] rounded-[16px] p-2.5 border border-[#E7E0EC] shadow-xs space-y-1.5">
-                  {/* Sachin Mandawi Profile (Real Avatar) */}
+                  {/* Sachin Mandawi Profile (GitHub Brand Icon) */}
                   <a
                     href="https://github.com/sachinmandawi"
                     target="_blank"
@@ -1330,11 +1331,9 @@ export default function App() {
                     className="flex items-center justify-between gap-2 group text-left hover:opacity-90 transition py-0.5"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <img
-                        src="/sachin_avatar.png"
-                        alt="Sachin Mandawi"
-                        className="w-7 h-7 rounded-full object-cover border border-[#E7E0EC] shrink-0"
-                      />
+                      <div className="w-7 h-7 rounded-full bg-[#24292E] flex items-center justify-center border border-[#E7E0EC] shrink-0 text-white shadow-sm">
+                        <Github className="w-4 h-4" />
+                      </div>
                       <div className="min-w-0">
                         <div className="text-[11px] font-bold text-[#1D1B20]">Sachin Mandawi</div>
                         <div className="text-[9px] text-[#79747E]">GitHub Profile</div>

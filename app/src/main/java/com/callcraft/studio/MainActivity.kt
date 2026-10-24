@@ -3096,7 +3096,7 @@ fun SettingsScreen(
                     modifier = Modifier.padding(10.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    // Sachin Mandawi Profile (Real Avatar)
+                    // Sachin Mandawi Profile (GitHub Brand Icon)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -3105,14 +3105,21 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.sachin_avatar),
-                            contentDescription = "Sachin Mandawi",
+                        Box(
                             modifier = Modifier
                                 .size(30.dp)
                                 .clip(CircleShape)
-                                .border(1.dp, LilacBorder, CircleShape)
-                        )
+                                .background(Color(0xFF24292E))
+                                .border(1.dp, LilacBorder, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_github),
+                                contentDescription = "GitHub",
+                                tint = Color.White,
+                                modifier = Modifier.size(17.dp)
+                            )
+                        }
                         Column(modifier = Modifier.weight(1f)) {
                             Text("Sachin Mandawi", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = LilacText)
                             Text("GitHub Profile", fontSize = 10.sp, color = LilacTextMuted)
