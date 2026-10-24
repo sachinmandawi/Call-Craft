@@ -12,4 +12,25 @@
     -ms-overflow-style: none;  /* IE and Edge */
     scrollbar-width: none;  /* Firefox */
   }
+
+  /* Modern Sleek Scrollbar Slider */
+  .modern-slider::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .modern-slider::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 4px 0;
+  }
+  .modern-slider::-webkit-scrollbar-thumb {
+    background: rgba(103, 80, 164, 0.28);
+    border-radius: 9999px;
+  }
+  .modern-slider::-webkit-scrollbar-thumb:hover {
+    background: rgba(103, 80, 164, 0.55);
+  }
+  .modern-slider {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(103, 80, 164, 0.3) transparent;
+  }
 }

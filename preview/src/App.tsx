@@ -315,6 +315,7 @@ export default function App() {
 
   // Google Phone Standard: Contact Call History Sheet State
   const [viewingGroup, setViewingGroup] = useState<ContactCallGroup | null>(null);
+  const [historyFilterTab, setHistoryFilterTab] = useState<'all' | '1' | '2' | '3'>('all');
 
   // Contact Picker State
   const [isContactPickerOpen, setIsContactPickerOpen] = useState(false);
@@ -1138,119 +1139,178 @@ export default function App() {
         </div>
 
         {/* Google Phone Standard: Contact Call History Bottom Sheet */}
-        {viewingGroup && (
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-end justify-center z-50 animate-in fade-in duration-150">
-            <div className="bg-[#FEF7FF] text-[#1D1B20] w-full rounded-t-[36px] p-6 shadow-2xl flex flex-col space-y-4 max-h-[88%] overflow-y-auto border-t border-[#E7E0EC]">
-              <div className="w-12 h-1 bg-[#79747E]/40 rounded-full mx-auto shrink-0 mb-1" />
+        {viewingGroup && (() => {
+          const filteredHistoryCalls = historyFilterTab === 'all'
+            ? viewingGroup.calls
+            : viewingGroup.calls.filter((c) => c.type === parseInt(historyFilterTab, 10));
 
-              {/* Contact Monogram & Details */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#6750A4] to-[#4F378B] text-white flex items-center justify-center text-lg font-black shadow-sm">
-                    {viewingGroup.name.slice(0, 1).toUpperCase()}
+          return (
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-end justify-center z-50 animate-in fade-in duration-150">
+              <div className="bg-[#FEF7FF] text-[#1D1B20] w-full rounded-t-[32px] px-5 pt-3 pb-3 shadow-2xl flex flex-col max-h-[86%] border-t border-[#E7E0EC] animate-in slide-in-from-bottom duration-200">
+                {/* Modern Slider Drag Handle */}
+                <div className="w-12 h-1.5 bg-[#79747E]/30 rounded-full mx-auto shrink-0 mb-3 hover:bg-[#6750A4]/40 transition" />
+
+                {/* Pinned Contact Monogram & Quick Actions */}
+                <div className="shrink-0 space-y-3 pb-3 border-b border-[#E7E0EC]/80">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-[#6750A4] to-[#4F378B] text-white flex items-center justify-center text-base font-black shadow-sm shrink-0">
+                        {viewingGroup.name.slice(0, 1).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-base font-black text-[#1D1B20] leading-tight truncate">{viewingGroup.name}</h3>
+                        <p className="text-xs text-[#79747E] font-medium font-mono truncate">{viewingGroup.number}</p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setViewingGroup(null);
+                        setHistoryFilterTab('all');
+                      }}
+                      className="w-8 h-8 rounded-full bg-[#ECE6F0] flex items-center justify-center text-[#49454F] hover:bg-[#E8DEF8] transition shrink-0 ml-2"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-black text-[#1D1B20] leading-tight">{viewingGroup.name}</h3>
-                    <p className="text-xs text-[#79747E] font-medium font-mono">{viewingGroup.number}</p>
+
+                  {/* Quick Actions: + Log Call & Delete All */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const target = viewingGroup;
+                        setViewingGroup(null);
+                        setHistoryFilterTab('all');
+                        openAddModal({ name: target.name, number: target.number, simSlot: target.latestItem.simSlot });
+                      }}
+                      className="py-2.5 rounded-xl bg-[#6750A4] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs hover:bg-[#553F8D] transition"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Log Call</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleDeleteAllForGroup(viewingGroup);
+                        setHistoryFilterTab('all');
+                      }}
+                      className="py-2.5 rounded-xl bg-rose-50 text-[#F43F5E] border border-rose-200 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-rose-100 transition"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Delete All</span>
+                    </button>
+                  </div>
+
+                  {/* Section Header + Modern Horizontal Filter Slider Tabs */}
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <span className="text-[10px] font-bold text-[#6750A4] uppercase tracking-wider shrink-0">
+                      Call History ({filteredHistoryCalls.length})
+                    </span>
+
+                    {/* Horizontal Sliding Filter Pills */}
+                    <div className="flex gap-1 overflow-x-auto no-scrollbar py-0.5">
+                      {[
+                        { id: 'all', label: 'All' },
+                        { id: '1', label: 'Incoming' },
+                        { id: '2', label: 'Outgoing' },
+                        { id: '3', label: 'Missed' },
+                      ].map((tab) => {
+                        const count = tab.id === 'all'
+                          ? viewingGroup.calls.length
+                          : viewingGroup.calls.filter((c) => c.type === parseInt(tab.id, 10)).length;
+                        if (tab.id !== 'all' && count === 0) return null;
+                        const isTabActive = historyFilterTab === tab.id;
+                        return (
+                          <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setHistoryFilterTab(tab.id as any)}
+                            className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition shrink-0 ${
+                              isTabActive
+                                ? 'bg-[#6750A4] text-white shadow-xs'
+                                : 'bg-[#ECE6F0] text-[#49454F] hover:bg-[#E8DEF8] hover:text-[#1D1B20]'
+                            }`}
+                          >
+                            {tab.label} {count > 0 && `(${count})`}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
 
-                <button
-                  onClick={() => setViewingGroup(null)}
-                  className="w-8 h-8 rounded-full bg-[#ECE6F0] flex items-center justify-center text-[#49454F] hover:bg-[#E8DEF8]"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+                {/* Scrollable Timeline with Modern Slider (No cutting off, no overlapping) */}
+                <div className="flex-1 overflow-y-auto modern-slider pr-1.5 pt-3 pb-8 space-y-2 min-h-0">
+                  {filteredHistoryCalls.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-[#79747E] font-medium">No calls found in this filter</div>
+                  ) : (
+                    filteredHistoryCalls.map((call) => {
+                      const typeMeta = CALL_TYPES.find((c) => c.type === call.type) || CALL_TYPES[0];
+                      const Icon = typeMeta.icon;
 
-              {/* Quick Actions: + Log Call & Delete All */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <button
-                  onClick={() => {
-                    const target = viewingGroup;
-                    setViewingGroup(null);
-                    openAddModal({ name: target.name, number: target.number, simSlot: target.latestItem.simSlot });
-                  }}
-                  className="py-2.5 rounded-xl bg-[#6750A4] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs hover:bg-[#553F8D] transition"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Log Call</span>
-                </button>
-
-                <button
-                  onClick={() => handleDeleteAllForGroup(viewingGroup)}
-                  className="py-2.5 rounded-xl bg-rose-50 text-[#F43F5E] border border-rose-200 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-rose-100 transition"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Delete All</span>
-                </button>
-              </div>
-
-              {/* Call History Timeline Header */}
-              <div className="pt-2">
-                <span className="text-[10px] font-bold text-[#6750A4] uppercase tracking-wider block mb-2">
-                  Call History ({viewingGroup.calls.length})
-                </span>
-
-                <div className="space-y-2">
-                  {viewingGroup.calls.map((call) => {
-                    const typeMeta = CALL_TYPES.find((c) => c.type === call.type) || CALL_TYPES[0];
-                    const Icon = typeMeta.icon;
-
-                    return (
-                      <div
-                        key={call.id}
-                        className="bg-[#F3EDF7] rounded-2xl p-3 flex items-center justify-between gap-3 hover:bg-[#ECE6F0] transition"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${typeMeta.bgLight}`}>
-                            <Icon className={`w-4 h-4 ${typeMeta.iconColor} stroke-[2.2]`} />
-                          </div>
-
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-bold text-[#1D1B20]">{typeMeta.label}</span>
-                              <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md ${
-                                call.simSlot === 1 ? 'bg-[#E8DEF8] text-[#6750A4]' : 'bg-[#E0F2FE] text-[#0284C7]'
-                              }`}>
-                                SIM {call.simSlot}
-                              </span>
+                      return (
+                        <div
+                          key={call.id}
+                          className="bg-[#F3EDF7] rounded-2xl p-3 flex items-center justify-between gap-2.5 hover:bg-[#ECE6F0] transition group border border-transparent hover:border-[#E7E0EC]"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${typeMeta.bgLight}`}>
+                              <Icon className={`w-4 h-4 ${typeMeta.iconColor} stroke-[2.2]`} />
                             </div>
-                            <p className="text-[11px] text-[#49454F] font-medium">
-                              {formatFullDateTime(call.date)} {call.durationSeconds > 0 && `• ${formatDuration(call.durationSeconds)}`}
-                            </p>
+
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-xs font-bold text-[#1D1B20]">{typeMeta.label}</span>
+                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-md ${
+                                  call.simSlot === 1 ? 'bg-[#E8DEF8] text-[#6750A4]' : 'bg-[#E0F2FE] text-[#0284C7]'
+                                }`}>
+                                  SIM {call.simSlot}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-[#49454F] font-medium truncate mt-0.5">
+                                {formatFullDateTime(call.date)} {call.durationSeconds > 0 && `• ${formatDuration(call.durationSeconds)}`}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 shrink-0 ml-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setViewingGroup(null);
+                                setHistoryFilterTab('all');
+                                openEditModal(call);
+                              }}
+                              className="p-1.5 rounded-full hover:bg-purple-100 text-[#6750A4] transition"
+                              title="Edit"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setLogs((prev) => prev.filter((item) => item.id !== call.id));
+                              }}
+                              className="p-1.5 rounded-full hover:bg-rose-100 text-[#F43F5E] transition"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            onClick={() => {
-                              setViewingGroup(null);
-                              openEditModal(call);
-                            }}
-                            className="p-1.5 rounded-full hover:bg-purple-100 text-[#6750A4]"
-                            title="Edit"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setLogs((prev) => prev.filter((item) => item.id !== call.id));
-                            }}
-                            className="p-1.5 rounded-full hover:bg-rose-100 text-[#F43F5E]"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
+                  {/* Bottom Safety Spacer to guarantee the last card is never cut off or touching the bezel */}
+                  <div className="h-6 shrink-0" />
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Modal Bottom Sheet for Add / Edit */}
         {isModalOpen && (
