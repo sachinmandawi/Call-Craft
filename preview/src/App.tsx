@@ -1677,12 +1677,12 @@ export default function App() {
                 </button>
               </div>
 
-              {/* 1. Phone Brand / Theme Style Selector */}
+              {/* 1. Phone Brand / Theme Style Selector (2x2 Grid: 100% Visible, No Scroll Needed) */}
               <div>
-                <label className="block text-[10px] font-bold text-[#79747E] tracking-wider uppercase mb-1">
+                <label className="block text-[10px] font-bold text-[#79747E] tracking-wider uppercase mb-1.5">
                   Call Screen Brand / Theme
                 </label>
-                <div className="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+                <div className="grid grid-cols-2 gap-2">
                   {[
                     { id: 'pixel', name: 'Google Pixel' },
                     { id: 'samsung', name: 'Samsung One UI' },
@@ -1695,9 +1695,9 @@ export default function App() {
                         key={b.id}
                         type="button"
                         onClick={() => setFakeCallBrand(b.id as any)}
-                        className={`px-3 py-1.5 rounded-xl text-[11px] font-bold shrink-0 transition flex items-center border ${
+                        className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center border text-center ${
                           isSelected
-                            ? 'bg-[#6750A4] text-white border-[#6750A4] shadow-xs'
+                            ? 'bg-[#6750A4] text-white border-[#6750A4] shadow-sm'
                             : 'bg-[#ECE6F0] text-[#1D1B20] border-[#E7E0EC] hover:bg-[#E8DEF8]'
                         }`}
                       >
@@ -1708,12 +1708,12 @@ export default function App() {
                 </div>
               </div>
 
-              {/* 2. Quick Caller Presets */}
+              {/* 2. Quick Caller Presets (Wrapped: 100% Visible) */}
               <div>
                 <label className="block text-[10px] font-bold text-[#79747E] tracking-wider uppercase mb-1">
                   Quick Caller Preset
                 </label>
-                <div className="flex gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+                <div className="flex flex-wrap gap-1.5">
                   {FAKE_CALL_PRESETS.map((preset) => {
                     const isSelected = fakeCallName === preset.name;
                     return (
@@ -1724,7 +1724,7 @@ export default function App() {
                           setFakeCallName(preset.name);
                           setFakeCallNumber(preset.number);
                         }}
-                        className={`px-3 py-1.5 rounded-[10px] text-[11px] font-bold shrink-0 transition flex items-center border ${
+                        className={`px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition flex items-center border ${
                           isSelected
                             ? 'bg-[#6750A4] text-white border-[#6750A4] shadow-xs'
                             : 'bg-[#ECE6F0] text-[#1D1B20] border-[#E7E0EC] hover:bg-[#E8DEF8]'
@@ -2066,15 +2066,23 @@ export default function App() {
                 </div>
               </div>
             ) : fakeCallBrand === 'ios' ? (
-              // Apple iPhone iOS Authentic Incoming Screen
-              <div className="absolute inset-0 bg-black text-white z-[60] flex flex-col justify-between p-7 select-none animate-in fade-in duration-200">
-                <div className="flex flex-col items-center pt-10 text-center space-y-1">
-                  <h2 className="text-[28px] font-normal text-white tracking-tight">{fakeCallName}</h2>
+              // Apple iPhone 18 Pro (iOS) Authentic Incoming Screen
+              <div className="absolute inset-0 bg-black text-white z-[60] flex flex-col justify-between p-6 select-none animate-in fade-in duration-200">
+                {/* iPhone Pro Dynamic Island */}
+                <div className="flex justify-center pt-1">
+                  <div className="w-[125px] h-[32px] bg-black rounded-full border border-white/10 shadow-lg flex items-center justify-between px-3">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#1A1A1A] border border-white/5" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#0D1B2A] border border-blue-500/20" />
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center pt-2 text-center space-y-1">
+                  <h2 className="text-[30px] font-light text-white tracking-tight">{fakeCallName}</h2>
                   <p className="text-sm text-[#8E8E93] font-normal">mobile • {fakeCallNumber}</p>
                 </div>
 
                 <div className="flex items-center justify-center">
-                  <div className="w-24 h-24 rounded-full bg-[#3A3A3C] text-white text-4xl font-medium flex items-center justify-center shadow-xl">
+                  <div className="w-24 h-24 rounded-full bg-[#1C1C1E] border border-white/10 text-white text-4xl font-normal flex items-center justify-center shadow-2xl">
                     {fakeCallName.slice(0, 1).toUpperCase()}
                   </div>
                 </div>
@@ -2141,9 +2149,9 @@ export default function App() {
 
                 <div className="flex items-center justify-center py-4">
                   <div className="relative flex items-center justify-center">
-                    <div className="absolute w-36 h-36 rounded-full bg-white/5 animate-ping duration-1000" />
-                    <div className="absolute w-28 h-28 rounded-full bg-white/10 animate-pulse" />
-                    <div className="relative w-22 h-22 rounded-full bg-gradient-to-tr from-[#6750A4] to-[#4F378B] flex items-center justify-center text-3xl font-black text-white shadow-2xl border-2 border-white/20">
+                    <div className="absolute w-44 h-44 rounded-full bg-white/5 animate-ping duration-1000 pointer-events-none" />
+                    <div className="absolute w-36 h-36 rounded-full bg-white/10 animate-pulse pointer-events-none" />
+                    <div className="relative w-28 h-28 min-w-[112px] min-h-[112px] aspect-square rounded-full bg-gradient-to-tr from-[#6750A4] to-[#4F378B] flex items-center justify-center text-4xl font-bold text-white shadow-2xl border-2 border-white/20 shrink-0">
                       {fakeCallName.slice(0, 1).toUpperCase()}
                     </div>
                   </div>
@@ -2218,8 +2226,20 @@ export default function App() {
                 </div>
               </div>
             ) : fakeCallBrand === 'ios' ? (
-              <div className="flex flex-col items-center pt-8 space-y-1">
-                <h2 className="text-[26px] font-normal text-white tracking-tight">{fakeCallName}</h2>
+              <div className="flex flex-col items-center pt-1 space-y-1">
+                {/* iPhone Pro Dynamic Island Active Call Waveform */}
+                <div className="w-[160px] h-[34px] bg-black rounded-full border border-white/10 shadow-lg flex items-center justify-between px-3 mb-3">
+                  <div className="flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 fill-[#34C759] text-[#34C759]" />
+                    <span className="text-[11px] font-mono text-[#34C759] font-medium">{formatCallTimer(fakeCallElapsedSec)}</span>
+                  </div>
+                  <div className="flex items-center gap-0.5">
+                    <span className="w-0.5 h-2.5 bg-[#34C759] rounded-full animate-pulse" />
+                    <span className="w-0.5 h-4 bg-[#34C759] rounded-full animate-bounce" />
+                    <span className="w-0.5 h-3 bg-[#34C759] rounded-full animate-pulse" />
+                  </div>
+                </div>
+                <h2 className="text-[28px] font-light text-white tracking-tight">{fakeCallName}</h2>
                 <div className="text-sm text-[#8E8E93] font-normal pt-0.5">
                   {isHold ? <span className="text-amber-400 font-semibold">call on hold</span> : formatCallTimer(fakeCallElapsedSec)}
                 </div>

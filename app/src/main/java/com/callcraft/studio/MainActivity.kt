@@ -275,9 +275,11 @@ fun CallLogEditorApp(repository: CallLogRepository) {
 
     val activeGroups = if (pagerState.currentPage == 0) allGroups else missedGroups
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                if (!isFakeIncomingActive && !isFakeCallAnswered) {
+                    TopAppBar(
                 title = {
                     if (isSelectionMode) {
                         val selectedGroupCount = activeGroups.count { g -> g.calls.any { it.id in selectedItemIds } }
@@ -497,9 +499,10 @@ fun CallLogEditorApp(repository: CallLogRepository) {
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = LilacBackground)
             )
+        }
         },
         floatingActionButton = {
-            if (currentScreen == AppScreen.Recents && !isSelectionMode) {
+            if (!isFakeIncomingActive && !isFakeCallAnswered && currentScreen == AppScreen.Recents && !isSelectionMode) {
                 FloatingActionButton(
                     onClick = {
                         editingItem = null
@@ -1130,6 +1133,7 @@ fun CallLogEditorApp(repository: CallLogRepository) {
                 }
             }
         )
+    }
     }
 }
 
@@ -2769,32 +2773,59 @@ fun FakeCallBottomSheet(
                     color = Color(0xFF79747E),
                     letterSpacing = 0.5.sp
                 )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    listOf(
-                        Pair("pixel", "Google Pixel"),
-                        Pair("samsung", "Samsung One UI"),
-                        Pair("hyperos", "Xiaomi HyperOS"),
-                        Pair("ios", "Apple iPhone")
-                    ).forEach { (bId, bName) ->
-                        val isSelected = selectedBrand == bId
-                        Surface(
-                            onClick = { selectedBrand = bId },
-                            shape = RoundedCornerShape(12.dp),
-                            color = if (isSelected) LilacPrimary else LilacSurfaceVariant,
-                            border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, LilacBorder)
-                        ) {
-                            Text(
-                                text = bName,
-                                fontSize = 11.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) Color.White else LilacText,
-                                modifier = Modifier.padding(horizontal = 11.dp, vertical = 6.dp)
-                            )
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf(
+                            Pair("pixel", "Google Pixel"),
+                            Pair("samsung", "Samsung One UI")
+                        ).forEach { (bId, bName) ->
+                            val isSelected = selectedBrand == bId
+                            Surface(
+                                onClick = { selectedBrand = bId },
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isSelected) LilacPrimary else LilacSurfaceVariant,
+                                border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, LilacBorder),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = bName,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) Color.White else LilacText,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp).fillMaxWidth()
+                                )
+                            }
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf(
+                            Pair("hyperos", "Xiaomi HyperOS"),
+                            Pair("ios", "Apple iPhone")
+                        ).forEach { (bId, bName) ->
+                            val isSelected = selectedBrand == bId
+                            Surface(
+                                onClick = { selectedBrand = bId },
+                                shape = RoundedCornerShape(12.dp),
+                                color = if (isSelected) LilacPrimary else LilacSurfaceVariant,
+                                border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, LilacBorder),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    text = bName,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                    color = if (isSelected) Color.White else LilacText,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp).fillMaxWidth()
+                                )
+                            }
                         }
                     }
                 }
@@ -3209,7 +3240,9 @@ fun FakeIncomingCallScreen(
                             listOf(Color(0xFF132039), Color(0xFF0C1424))
                         )
                     )
-                    .padding(horizontal = 24.dp, vertical = 40.dp)
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 24.dp, vertical = 20.dp)
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -3321,7 +3354,9 @@ fun FakeIncomingCallScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color(0xFF17181A))
-                    .padding(horizontal = 24.dp, vertical = 40.dp)
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 24.dp, vertical = 20.dp)
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -3432,26 +3467,60 @@ fun FakeIncomingCallScreen(
             }
         }
         "ios" -> {
-            // Apple iPhone iOS Authentic Incoming Screen
+            // Apple iPhone 18 Pro (iOS) Authentic Incoming Screen
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black)
-                    .padding(horizontal = 24.dp, vertical = 44.dp)
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 24.dp, vertical = 20.dp)
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
+                    // iPhone Pro Dynamic Island Pill
+                    Surface(
+                        shape = CircleShape,
+                        color = Color.Black,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .width(125.dp)
+                                .height(32.dp)
+                                .padding(horizontal = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF1A1A1A))
+                                    .border(0.5.dp, Color.White.copy(alpha = 0.1f), CircleShape)
+                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF0D1B2A))
+                                    .border(0.5.dp, Color(0xFF38BDF8).copy(alpha = 0.3f), CircleShape)
+                            )
+                        }
+                    }
+
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.padding(top = 28.dp)
+                        modifier = Modifier.padding(top = 4.dp)
                     ) {
                         Text(
                             text = callerName,
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Normal,
+                            fontSize = 30.sp,
+                            fontWeight = FontWeight.Light,
                             color = Color.White
                         )
                         Spacer(modifier = Modifier.height(4.dp))
@@ -3467,13 +3536,14 @@ fun FakeIncomingCallScreen(
                         modifier = Modifier
                             .size(96.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF3A3A3C)),
+                            .background(Color(0xFF1C1C1E))
+                            .border(1.dp, Color.White.copy(alpha = 0.12f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = callerName.take(1).uppercase(),
                             fontSize = 38.sp,
-                            fontWeight = FontWeight.Medium,
+                            fontWeight = FontWeight.Normal,
                             color = Color.White
                         )
                     }
@@ -3569,7 +3639,9 @@ fun FakeIncomingCallScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color(0xFF121214))
-                    .padding(horizontal = 24.dp, vertical = 36.dp)
+                    .statusBarsPadding()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 24.dp, vertical = 20.dp)
             ) {
                 Column(
                     modifier = Modifier.fillMaxSize(),
@@ -3765,7 +3837,9 @@ fun FakeActiveCallScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .then(bgModifier)
-                .padding(horizontal = 24.dp, vertical = 32.dp)
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 24.dp, vertical = 20.dp)
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -3811,9 +3885,52 @@ fun FakeActiveCallScreen(
                     "ios" -> {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.padding(top = 20.dp)
+                            modifier = Modifier.padding(top = 4.dp)
                         ) {
-                            Text(text = callerName, fontSize = 26.sp, fontWeight = FontWeight.Normal, color = Color.White)
+                            // iPhone Pro Active Dynamic Island with Live Call Waveform
+                            Surface(
+                                shape = CircleShape,
+                                color = Color.Black,
+                                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.15f)),
+                                modifier = Modifier.padding(bottom = 14.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .width(160.dp)
+                                        .height(34.dp)
+                                        .padding(horizontal = 12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Call,
+                                            contentDescription = null,
+                                            tint = Color(0xFF34C759),
+                                            modifier = Modifier.size(13.dp)
+                                        )
+                                        Text(
+                                            text = formattedDuration,
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = Color(0xFF34C759)
+                                        )
+                                    }
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(modifier = Modifier.width(2.dp).height(10.dp).background(Color(0xFF34C759), CircleShape))
+                                        Box(modifier = Modifier.width(2.dp).height(16.dp).background(Color(0xFF34C759), CircleShape))
+                                        Box(modifier = Modifier.width(2.dp).height(12.dp).background(Color(0xFF34C759), CircleShape))
+                                    }
+                                }
+                            }
+
+                            Text(text = callerName, fontSize = 28.sp, fontWeight = FontWeight.Light, color = Color.White)
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = if (isHold) "call on hold" else formattedDuration,
