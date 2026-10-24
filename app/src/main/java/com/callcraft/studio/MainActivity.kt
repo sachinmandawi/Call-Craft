@@ -1231,10 +1231,6 @@ fun ContactHistoryBottomSheet(
     onDeleteAllHistory: () -> Unit
 ) {
     var showConfirmDeleteAll by remember { mutableStateOf(false) }
-    var filterType by remember { mutableStateOf<Int?>(null) } // null = All
-    val filteredCalls = remember(group.calls, filterType) {
-        if (filterType == null) group.calls else group.calls.filter { it.type == filterType }
-    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -1366,157 +1362,114 @@ fun ContactHistoryBottomSheet(
             }
 
             // Timeline Section Header + Modern Horizontal Filter Slider Tabs
+            // Timeline Section Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "CALL HISTORY (${filteredCalls.size})",
+                    "CALL HISTORY (${group.calls.size})",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = LilacPrimary,
                     letterSpacing = 0.5.sp
                 )
-
-                Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    listOf(
-                        null to "All",
-                        CallLog.Calls.INCOMING_TYPE to "Incoming",
-                        CallLog.Calls.OUTGOING_TYPE to "Outgoing",
-                        CallLog.Calls.MISSED_TYPE to "Missed"
-                    ).forEach { (t, label) ->
-                        val count = if (t == null) group.calls.size else group.calls.count { it.type == t }
-                        if (t != null && count == 0) return@forEach
-                        val isSelected = filterType == t
-                        Surface(
-                            onClick = { filterType = t },
-                            shape = RoundedCornerShape(10.dp),
-                            color = if (isSelected) LilacPrimary else LilacSurfaceVariant,
-                            border = if (isSelected) null else androidx.compose.foundation.BorderStroke(1.dp, LilacBorder)
-                        ) {
-                            Text(
-                                text = "$label ($count)",
-                                fontSize = 10.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) Color.White else LilacText,
-                                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
-                            )
-                        }
-                    }
-                }
             }
 
-            // History Timeline List with Modern Scrollbar Slider (No clipping, no overlapping)
+            // History Timeline List
             val listState = rememberLazyListState()
             LazyColumn(
                 state = listState,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 390.dp)
-                    .simpleVerticalScrollbar(listState, width = 4.dp),
-                contentPadding = PaddingValues(bottom = 32.dp, end = 2.dp),
+                    .heightIn(max = 390.dp),
+                contentPadding = PaddingValues(bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                if (filteredCalls.isEmpty()) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 32.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("No calls found in this filter", fontSize = 12.sp, color = LilacTextMuted)
-                        }
+                items(group.calls, key = { it.id }) { call ->
+                    val (icon, color) = when (call.type) {
+                        CallLog.Calls.INCOMING_TYPE -> Icons.AutoMirrored.Filled.CallReceived to StatusIncoming
+                        CallLog.Calls.OUTGOING_TYPE -> Icons.AutoMirrored.Filled.CallMade to StatusOutgoing
+                        CallLog.Calls.MISSED_TYPE -> Icons.AutoMirrored.Filled.CallMissed to StatusMissed
+                        CallLog.Calls.REJECTED_TYPE -> Icons.AutoMirrored.Filled.PhoneMissed to StatusRejected
+                        else -> Icons.Default.Call to Color.Gray
                     }
-                } else {
-                    items(filteredCalls, key = { it.id }) { call ->
-                        val (icon, color) = when (call.type) {
-                            CallLog.Calls.INCOMING_TYPE -> Icons.AutoMirrored.Filled.CallReceived to StatusIncoming
-                            CallLog.Calls.OUTGOING_TYPE -> Icons.AutoMirrored.Filled.CallMade to StatusOutgoing
-                            CallLog.Calls.MISSED_TYPE -> Icons.AutoMirrored.Filled.CallMissed to StatusMissed
-                            CallLog.Calls.REJECTED_TYPE -> Icons.AutoMirrored.Filled.PhoneMissed to StatusRejected
-                            else -> Icons.Default.Call to Color.Gray
-                        }
 
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = LilacSurface,
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = LilacSurface,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onEditCall(call) }
+                    ) {
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onEditCall(call) }
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
+                            Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .size(32.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(color.copy(alpha = 0.12f)),
+                                contentAlignment = Alignment.Center
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(color.copy(alpha = 0.12f)),
-                                    contentAlignment = Alignment.Center
+                                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
+                            }
+
+                            Spacer(modifier = Modifier.width(10.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(5.dp)
                                 ) {
-                                    Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
-                                }
-
-                                Spacer(modifier = Modifier.width(10.dp))
-
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                    Text(
+                                        text = CallLogItem.typeLabel(call.type),
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = LilacText
+                                    )
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = if (call.simSlot == 1) LilacPrimaryContainer else Color(0xFFE0F2FE)
                                     ) {
                                         Text(
-                                            text = CallLogItem.typeLabel(call.type),
-                                            fontSize = 13.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = LilacText
+                                            text = if (call.simSlot == 1) "SIM 1" else "SIM 2",
+                                            fontSize = 8.sp,
+                                            fontWeight = FontWeight.Black,
+                                            color = if (call.simSlot == 1) LilacPrimary else Color(0xFF0284C7),
+                                            modifier = Modifier.padding(horizontal = 3.dp, vertical = 1.dp)
                                         )
-                                        Surface(
-                                            shape = RoundedCornerShape(4.dp),
-                                            color = if (call.simSlot == 1) LilacPrimaryContainer else Color(0xFFE0F2FE)
-                                        ) {
-                                            Text(
-                                                text = if (call.simSlot == 1) "SIM 1" else "SIM 2",
-                                                fontSize = 8.sp,
-                                                fontWeight = FontWeight.Black,
-                                                color = if (call.simSlot == 1) LilacPrimary else Color(0xFF0284C7),
-                                                modifier = Modifier.padding(horizontal = 3.dp, vertical = 1.dp)
-                                            )
-                                        }
                                     }
-                                    Text(
-                                        text = "${formatFullDateTime(call.dateMillis)} ${if (call.durationSeconds > 0) "• ${formatDuration(call.durationSeconds)}" else ""}",
-                                        fontSize = 11.sp,
-                                        color = LilacTextMuted,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
+                                }
+                                Text(
+                                    text = "${formatFullDateTime(call.dateMillis)} ${if (call.durationSeconds > 0) "• ${formatDuration(call.durationSeconds)}" else ""}",
+                                    fontSize = 11.sp,
+                                    color = LilacTextMuted,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                modifier = Modifier.padding(end = 2.dp)
+                            ) {
+                                IconButton(
+                                    onClick = { onEditCall(call) },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Edit Call", tint = LilacPrimary, modifier = Modifier.size(15.dp))
                                 }
 
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                    modifier = Modifier.padding(end = 2.dp)
+                                IconButton(
+                                    onClick = { onDeleteCall(call.id) },
+                                    modifier = Modifier.size(28.dp)
                                 ) {
-                                    IconButton(
-                                        onClick = { onEditCall(call) },
-                                        modifier = Modifier.size(28.dp)
-                                    ) {
-                                        Icon(Icons.Default.Edit, contentDescription = "Edit Call", tint = LilacPrimary, modifier = Modifier.size(15.dp))
-                                    }
-
-                                    IconButton(
-                                        onClick = { onDeleteCall(call.id) },
-                                        modifier = Modifier.size(28.dp)
-                                    ) {
-                                        Icon(Icons.Default.Delete, contentDescription = "Delete Call", tint = StatusMissed, modifier = Modifier.size(15.dp))
-                                    }
+                                    Icon(Icons.Default.Delete, contentDescription = "Delete Call", tint = StatusMissed, modifier = Modifier.size(15.dp))
                                 }
                             }
                         }
