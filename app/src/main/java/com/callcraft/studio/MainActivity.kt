@@ -2703,6 +2703,13 @@ fun SplashScreen(
     }
 }
 
+data class AppPermissionDialogInfo(
+    val title: String,
+    val permissionName: String,
+    val description: String,
+    val permissions: Array<String>
+)
+
 @Composable
 fun SettingsScreen(
     context: Context,
@@ -2717,6 +2724,7 @@ fun SettingsScreen(
     var phoneStateGranted by remember { mutableStateOf(false) }
     var isRoleHeld by remember { mutableStateOf(false) }
     var showLogsDialog by remember { mutableStateOf(false) }
+    var pendingPermissionDialog by remember { mutableStateOf<AppPermissionDialogInfo?>(null) }
 
     fun refreshDiagnostics() {
         callLogGranted = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALL_LOG) == PackageManager.PERMISSION_GRANTED &&
@@ -2773,10 +2781,11 @@ fun SettingsScreen(
     }
 
     fun sendLogsToDeveloper() {
+        val subject = "CallCraft Diagnostic Report - ${Build.MODEL}"
         try {
-            val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
-                data = Uri.parse("mailto:sachinmandawi@gmail.com")
-                putExtra(Intent.EXTRA_SUBJECT, "CallCraft Diagnostic Report - ${Build.MODEL}")
+            val mailtoUri = Uri.parse("mailto:sachinmandawi@gmail.com?subject=${Uri.encode(subject)}&body=${Uri.encode(diagnosticReport)}")
+            val emailIntent = Intent(Intent.ACTION_SENDTO, mailtoUri).apply {
+                putExtra(Intent.EXTRA_SUBJECT, subject)
                 putExtra(Intent.EXTRA_TEXT, diagnosticReport)
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
@@ -3023,8 +3032,11 @@ fun SettingsScreen(
                         title = "Call Logs Access",
                         isGranted = callLogGranted,
                         onGrant = {
-                            permissionLauncher.launch(
-                                arrayOf(
+                            pendingPermissionDialog = AppPermissionDialogInfo(
+                                title = "Allow CallCraft to access your call logs?",
+                                permissionName = "Call Logs",
+                                description = "CallCraft requires access to view, edit, search, and manage your call history.",
+                                permissions = arrayOf(
                                     Manifest.permission.READ_CALL_LOG,
                                     Manifest.permission.WRITE_CALL_LOG
                                 )
@@ -3037,7 +3049,12 @@ fun SettingsScreen(
                         title = "Contacts Access",
                         isGranted = contactsGranted,
                         onGrant = {
-                            permissionLauncher.launch(arrayOf(Manifest.permission.READ_CONTACTS))
+                            pendingPermissionDialog = AppPermissionDialogInfo(
+                                title = "Allow CallCraft to access your contacts?",
+                                permissionName = "Contacts",
+                                description = "CallCraft requires Contacts permission to match numbers with your address book and show contact names.",
+                                permissions = arrayOf(Manifest.permission.READ_CONTACTS)
+                            )
                         }
                     )
 
@@ -3046,7 +3063,12 @@ fun SettingsScreen(
                         title = "Phone State Access",
                         isGranted = phoneStateGranted,
                         onGrant = {
-                            permissionLauncher.launch(arrayOf(Manifest.permission.READ_PHONE_STATE))
+                            pendingPermissionDialog = AppPermissionDialogInfo(
+                                title = "Allow CallCraft to access phone state?",
+                                permissionName = "Phone State & SIM",
+                                description = "CallCraft requires Phone State permission to detect dual-SIM carriers and simulate authentic call screens.",
+                                permissions = arrayOf(Manifest.permission.READ_PHONE_STATE)
+                            )
                         }
                     )
 
@@ -3434,18 +3456,27 @@ fun SettingsScreen(
                             }
                         }
 
-                        Button(
-                            onClick = { checkForUpdates() },
-                            enabled = updateState !is AppUpdateState.Checking && updateState !is AppUpdateState.Downloading,
+                        Surface(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable(enabled = updateState !is AppUpdateState.Checking && updateState !is AppUpdateState.Downloading) {
+                                    checkForUpdates()
+                                },
                             shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = LilacPrimary),
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
+                            color = if (updateState is AppUpdateState.Checking || updateState is AppUpdateState.Downloading)
+                                LilacPrimary.copy(alpha = 0.5f) else LilacPrimary
                         ) {
-                            Text(
-                                if (updateState is AppUpdateState.Checking) "Checking..." else "Check Update",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Box(
+                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    if (updateState is AppUpdateState.Checking) "Checking..." else "Check Update",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
                         }
                     }
 
@@ -3479,16 +3510,23 @@ fun SettingsScreen(
                                     verticalArrangement = Arrangement.spacedBy(6.dp)
                                 ) {
                                     Text("Update Available: v${state.version}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = LilacOnPrimaryContainer)
-                                    Button(
-                                        onClick = { downloadAndInstallUpdate(state.downloadUrl) },
-                                        modifier = Modifier.fillMaxWidth(),
+                                    Surface(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .clickable { downloadAndInstallUpdate(state.downloadUrl) },
                                         shape = RoundedCornerShape(8.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = LilacPrimary),
-                                        contentPadding = PaddingValues(vertical = 6.dp)
+                                        color = LilacPrimary
                                     ) {
-                                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(15.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text("Install Update (In-Place)", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                        Row(
+                                            modifier = Modifier.padding(vertical = 5.dp),
+                                            horizontalArrangement = Arrangement.Center,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(13.dp), tint = Color.White)
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text("Install Update", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                                        }
                                     }
                                 }
                             }
@@ -3604,43 +3642,65 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        // View Logs Button
-                        OutlinedButton(
-                            onClick = { showLogsDialog = true },
-                            modifier = Modifier.weight(1f),
+                        // View Logs Button (Sleek Slim Pill)
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { showLogsDialog = true },
                             shape = RoundedCornerShape(8.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, LilacBorder),
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 5.dp)
+                            color = LilacBackground,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, LilacBorder)
                         ) {
-                            Text("View Logs", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = LilacText)
+                            Box(
+                                modifier = Modifier.padding(vertical = 5.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text("View Logs", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = LilacText)
+                            }
                         }
 
-                        // Copy Logs Button
-                        OutlinedButton(
-                            onClick = {
-                                copyToClipboard("CallCraft Diagnostics", diagnosticReport, "Diagnostic report copied to clipboard")
-                            },
-                            modifier = Modifier.weight(1f),
+                        // Copy Logs Button (Sleek Slim Pill)
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    copyToClipboard("CallCraft Diagnostics", diagnosticReport, "Diagnostic report copied to clipboard")
+                                },
                             shape = RoundedCornerShape(8.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, LilacBorder),
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 5.dp)
+                            color = LilacBackground,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, LilacBorder)
                         ) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(12.dp), tint = LilacPrimary)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Copy", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = LilacText)
+                            Row(
+                                modifier = Modifier.padding(vertical = 5.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(11.dp), tint = LilacPrimary)
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text("Copy", fontSize = 10.sp, fontWeight = FontWeight.SemiBold, color = LilacText)
+                            }
                         }
 
-                        // Send to Sachin Button
-                        Button(
-                            onClick = { sendLogsToDeveloper() },
-                            modifier = Modifier.weight(1.3f),
+                        // Send Button (Sleek Slim Pill)
+                        Surface(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { sendLogsToDeveloper() },
                             shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = LilacPrimary),
-                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 5.dp)
+                            color = LilacPrimary
                         ) {
-                            Icon(Icons.Default.Email, contentDescription = null, modifier = Modifier.size(12.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Send Sachin", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Row(
+                                modifier = Modifier.padding(vertical = 5.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Email, contentDescription = null, modifier = Modifier.size(11.dp), tint = Color.White)
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text("Send", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            }
                         }
                     }
                 }
@@ -3705,6 +3765,117 @@ fun SettingsScreen(
             shape = RoundedCornerShape(18.dp)
         )
     }
+
+    pendingPermissionDialog?.let { dialogInfo ->
+        AlertDialog(
+            onDismissRequest = { pendingPermissionDialog = null },
+            icon = {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(LilacPrimary.copy(alpha = 0.12f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Shield,
+                        contentDescription = null,
+                        tint = LilacPrimary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            },
+            title = {
+                Text(
+                    dialogInfo.title,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = LilacText,
+                    textAlign = TextAlign.Center
+                )
+            },
+            text = {
+                Text(
+                    dialogInfo.description,
+                    fontSize = 11.sp,
+                    color = LilacTextMuted,
+                    lineHeight = 15.sp,
+                    textAlign = TextAlign.Center
+                )
+            },
+            confirmButton = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable {
+                                val perms = dialogInfo.permissions
+                                pendingPermissionDialog = null
+                                permissionLauncher.launch(perms)
+                            },
+                        shape = RoundedCornerShape(8.dp),
+                        color = LilacPrimary
+                    ) {
+                        Box(
+                            modifier = Modifier.padding(vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("While using the app", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                    }
+
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable {
+                                pendingPermissionDialog = null
+                                try {
+                                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                        data = Uri.fromParts("package", context.packageName, null)
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {}
+                            },
+                        shape = RoundedCornerShape(8.dp),
+                        color = LilacBackground,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, LilacBorder)
+                    ) {
+                        Box(
+                            modifier = Modifier.padding(vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Open App Settings", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = LilacText)
+                        }
+                    }
+
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { pendingPermissionDialog = null },
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color.Transparent
+                    ) {
+                        Box(
+                            modifier = Modifier.padding(vertical = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("Don't allow", fontSize = 11.sp, color = LilacTextMuted)
+                        }
+                    }
+                }
+            },
+            dismissButton = null,
+            containerColor = LilacBackground,
+            shape = RoundedCornerShape(18.dp)
+        )
+    }
 }
 
 @Composable
@@ -3726,7 +3897,7 @@ fun DiagnosticCleanRow(
                 color = StatusIncoming.copy(alpha = 0.12f)
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
@@ -3735,13 +3906,19 @@ fun DiagnosticCleanRow(
                 }
             }
         } else {
-            Button(
-                onClick = onGrant,
+            Surface(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .clickable { onGrant() },
                 shape = RoundedCornerShape(6.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = LilacPrimary),
-                contentPadding = PaddingValues(horizontal = 7.dp, vertical = 2.dp)
+                color = LilacPrimary
             ) {
-                Text("Grant", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Box(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Grant", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                }
             }
         }
     }

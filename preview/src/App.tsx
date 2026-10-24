@@ -304,7 +304,12 @@ function AppLogo({ size = 32 }: { size?: number }) {
 
 export default function App() {
   const [deviceKey, setDeviceKey] = useState<keyof typeof DEVICE_PRESETS>('standard');
-  const [currentScreen, setCurrentScreen] = useState<'recents' | 'settings'>('recents');
+  const [currentScreen, setCurrentScreen] = useState<'recents' | 'settings'>(() => {
+    if (typeof window !== 'undefined' && window.location.search.includes('screen=settings')) {
+      return 'settings';
+    }
+    return 'recents';
+  });
   const [splashState, setSplashState] = useState<'visible' | 'fading' | 'hidden'>('visible');
   const [logs, setLogs] = useState<CallLogItem[]>(INITIAL_LOGS);
   const [searchQuery, setSearchQuery] = useState('');
@@ -1186,7 +1191,15 @@ export default function App() {
             </div>
 
             {/* SCREEN 2: SETTINGS */}
-            <div className="w-full h-full shrink-0 flex flex-col overflow-y-auto no-scrollbar px-3.5 py-3 space-y-2.5">
+            <div
+              id="settings-container"
+              ref={(el) => {
+                if (el && typeof window !== 'undefined' && window.location.search.includes('scroll=bottom')) {
+                  el.scrollTop = el.scrollHeight;
+                }
+              }}
+              className="w-full h-full shrink-0 flex flex-col overflow-y-auto no-scrollbar px-3.5 py-3 space-y-2.5"
+            >
               {/* Header */}
               <div className="flex items-center gap-2.5 pb-2 border-b border-[#E7E0EC] shrink-0">
                 <button
@@ -1629,7 +1642,7 @@ export default function App() {
                       className="py-1.5 px-2 rounded-xl bg-[#6750A4] hover:bg-[#553F8D] text-white text-[10px] font-bold flex items-center justify-center gap-1.5 transition shadow-xs text-center"
                     >
                       <Mail className="w-3 h-3 text-white" />
-                      <span>Send to Sachin</span>
+                      <span>Send</span>
                     </a>
                   </div>
                 </div>
