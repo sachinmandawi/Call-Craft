@@ -38,6 +38,7 @@ android {
 }
 
 dependencies {
+    implementation("androidx.core:core-splashscreen:1.0.1")
     implementation("androidx.core:core-ktx:1.15.0")
     val composeBom = platform("androidx.compose:compose-bom:2024.10.00")
     implementation(composeBom)

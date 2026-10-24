@@ -19,6 +19,7 @@ import android.provider.Settings
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.callcraft.studio.service.FakeCallHelper
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -30,11 +31,16 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.ui.zIndex
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
@@ -112,12 +118,14 @@ val StatusMissed = Color(0xFFF43F5E)   // Soft Crimson / Coral Rose
 val StatusRejected = Color(0xFFF59E0B) // Warm Amber / Tangerine
 
 enum class AppScreen {
+    Splash,
     Recents,
     Settings
 }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         val repository = CallLogRepository(applicationContext)
 
@@ -149,8 +157,19 @@ fun CallLogEditorApp(repository: CallLogRepository) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    var currentScreen by remember { mutableStateOf(AppScreen.Recents) }
+    var currentScreen by remember { mutableStateOf(AppScreen.Splash) }
+    var bottomToastMessage by remember { mutableStateOf<String?>(null) }
     var logs by remember { mutableStateOf<List<CallLogItem>>(emptyList()) }
+
+    fun showBottomToast(message: String) {
+        bottomToastMessage = message
+        scope.launch {
+            kotlinx.coroutines.delay(2000)
+            if (bottomToastMessage == message) {
+                bottomToastMessage = null
+            }
+        }
+    }
     var searchQuery by remember { mutableStateOf("") }
     val pagerState = rememberPagerState(pageCount = { 2 })
 
@@ -293,7 +312,7 @@ fun CallLogEditorApp(repository: CallLogRepository) {
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             topBar = {
-                if (!isFakeIncomingActive && !isFakeCallAnswered) {
+                if (!isFakeIncomingActive && !isFakeCallAnswered && currentScreen != AppScreen.Splash) {
                     TopAppBar(
                 title = {
                     if (isSelectionMode) {
@@ -454,6 +473,7 @@ fun CallLogEditorApp(repository: CallLogRepository) {
                                     )
                                 }
                             }
+                            else -> {}
                         }
                     }
                 },
@@ -547,8 +567,13 @@ fun CallLogEditorApp(repository: CallLogRepository) {
         AnimatedContent(
             targetState = currentScreen,
             transitionSpec = {
+                val isSplash = (initialState == AppScreen.Splash || targetState == AppScreen.Splash)
                 val isForward = (initialState == AppScreen.Recents && targetState == AppScreen.Settings)
-                if (isForward) {
+                if (isSplash) {
+                    fadeIn(animationSpec = tween(300)).togetherWith(
+                        fadeOut(animationSpec = tween(250))
+                    )
+                } else if (isForward) {
                     (slideInHorizontally(
                         initialOffsetX = { fullWidth -> fullWidth },
                         animationSpec = tween(320, easing = FastOutSlowInEasing)
@@ -822,6 +847,14 @@ fun CallLogEditorApp(repository: CallLogRepository) {
                     }
                 }
 
+                AppScreen.Splash -> {
+                    SplashScreen(
+                        onSplashFinished = {
+                            currentScreen = AppScreen.Recents
+                        }
+                    )
+                }
+
                 AppScreen.Settings -> {
                     SettingsScreen(
                         context = context,
@@ -830,7 +863,8 @@ fun CallLogEditorApp(repository: CallLogRepository) {
                                 val roleManager = context.getSystemService(Context.ROLE_SERVICE) as RoleManager
                                 roleLauncher.launch(roleManager.createRequestRoleIntent(RoleManager.ROLE_DIALER))
                             }
-                        }
+                        },
+                        onShowToast = { showBottomToast(it) }
                     )
                 }
             }
@@ -1148,6 +1182,43 @@ fun CallLogEditorApp(repository: CallLogRepository) {
                 }
             }
         )
+    }
+
+    // Bottom Pill Toast Host (with custom shrink and slide-down exit animation)
+    AnimatedVisibility(
+        visible = bottomToastMessage != null,
+        enter = fadeIn(tween(150)) + slideInVertically(initialOffsetY = { it / 2 }) + scaleIn(initialScale = 0.85f),
+        exit = fadeOut(tween(200)) + slideOutVertically(targetOffsetY = { it / 2 }) + scaleOut(targetScale = 0.75f),
+        modifier = Modifier
+            .fillMaxSize()
+            .wrapContentSize(Alignment.BottomCenter)
+            .padding(bottom = 32.dp)
+            .zIndex(100f)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(50),
+            color = Color(0xFF1D1B20),
+            shadowElevation = 8.dp
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    Icons.Default.Check,
+                    contentDescription = null,
+                    tint = StatusIncoming,
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = bottomToastMessage ?: "",
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
     }
     }
 }
@@ -2537,9 +2608,105 @@ sealed class AppUpdateState {
 }
 
 @Composable
+fun SplashScreen(
+    onSplashFinished: () -> Unit
+) {
+    val scale = remember { Animatable(0.75f) }
+    val alpha = remember { Animatable(0f) }
+
+    LaunchedEffect(Unit) {
+        launch {
+            scale.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(
+                    durationMillis = 800,
+                    easing = FastOutSlowInEasing
+                )
+            )
+        }
+        launch {
+            alpha.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(
+                    durationMillis = 600,
+                    easing = LinearEasing
+                )
+            )
+        }
+        kotlinx.coroutines.delay(1200)
+        onSplashFinished()
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(LilacBackground),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier
+                .scale(scale.value)
+                .alpha(alpha.value)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = Color.White,
+                border = androidx.compose.foundation.BorderStroke(1.dp, LilacBorder),
+                shadowElevation = 8.dp
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.app_logo),
+                    contentDescription = "CallCraft Logo",
+                    modifier = Modifier
+                        .size(88.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                )
+            }
+
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Call",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = LilacText
+                    )
+                    Text(
+                        "Craft",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Black,
+                        color = LilacPrimary
+                    )
+                }
+                Text(
+                    "Modern Call Log Editor",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = LilacTextMuted,
+                    letterSpacing = 1.2.sp
+                )
+            }
+        }
+
+        Text(
+            "v1.0.0",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            color = LilacTextMuted.copy(alpha = 0.6f),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 32.dp)
+        )
+    }
+}
+
+@Composable
 fun SettingsScreen(
     context: Context,
-    onRequestRole: () -> Unit
+    onRequestRole: () -> Unit,
+    onShowToast: (String) -> Unit = {}
 ) {
     val coroutineScope = rememberCoroutineScope()
     var updateState by remember { mutableStateOf<AppUpdateState>(AppUpdateState.Idle) }
@@ -2593,14 +2760,14 @@ fun SettingsScreen(
         } catch (e: Exception) {
             val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
             cm?.setPrimaryClip(ClipData.newPlainText("Developer Email", "sachinmandawi@gmail.com"))
-            Toast.makeText(context, "Email copied: sachinmandawi@gmail.com", Toast.LENGTH_SHORT).show()
+            onShowToast("Email copied: sachinmandawi@gmail.com")
         }
     }
 
     fun copyToClipboard(label: String, text: String, message: String) {
         val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
         cm?.setPrimaryClip(ClipData.newPlainText(label, text))
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        onShowToast(message)
     }
 
     fun checkForUpdates() {

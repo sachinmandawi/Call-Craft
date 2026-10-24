@@ -35,7 +35,8 @@ import {
   ExternalLink,
   Bug,
   Download,
-  RefreshCw
+  RefreshCw,
+  Sparkles
 } from 'lucide-react';
 
 export type CallType = 1 | 2 | 3 | 5; // 1: Incoming, 2: Outgoing, 3: Missed, 5: Rejected
@@ -302,6 +303,7 @@ function AppLogo({ size = 32 }: { size?: number }) {
 export default function App() {
   const [deviceKey, setDeviceKey] = useState<keyof typeof DEVICE_PRESETS>('standard');
   const [currentScreen, setCurrentScreen] = useState<'recents' | 'settings'>('recents');
+  const [splashState, setSplashState] = useState<'visible' | 'fading' | 'hidden'>('visible');
   const [logs, setLogs] = useState<CallLogItem[]>(INITIAL_LOGS);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategoryFilter, setActiveCategoryFilter] = useState<number | 'ALL'>('ALL');
@@ -309,14 +311,42 @@ export default function App() {
   const [hasCallLogPermission, setHasCallLogPermission] = useState(true);
   const [hasContactsPermission, setHasContactsPermission] = useState(true);
   const [hasPhoneStatePermission, setHasPhoneStatePermission] = useState(true);
-  const [copiedToast, setCopiedToast] = useState<string | null>(null);
+  const [toastState, setToastState] = useState<{ message: string; isExiting: boolean } | null>(null);
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'checking' | 'latest' | 'available' | 'error'>('idle');
   const [latestReleaseInfo, setLatestReleaseInfo] = useState<{ version: string; url: string; notes: string } | null>(null);
 
+  const showToast = (message: string) => {
+    setToastState({ message, isExiting: false });
+    setTimeout(() => {
+      setToastState(prev => (prev && prev.message === message ? { ...prev, isExiting: true } : prev));
+      setTimeout(() => {
+        setToastState(prev => (prev && prev.message === message ? null : prev));
+      }, 200);
+    }, 2000);
+  };
+
   const triggerCopy = (label: string, text: string) => {
     navigator.clipboard?.writeText(text);
-    setCopiedToast(`${label} copied: ${text}`);
-    setTimeout(() => setCopiedToast(null), 2500);
+    showToast(`${label} copied: ${text}`);
+  };
+
+  useEffect(() => {
+    const fadeTimer = setTimeout(() => {
+      setSplashState('fading');
+      const hideTimer = setTimeout(() => {
+        setSplashState('hidden');
+      }, 300);
+      return () => clearTimeout(hideTimer);
+    }, 1200);
+    return () => clearTimeout(fadeTimer);
+  }, []);
+
+  const replaySplash = () => {
+    setSplashState('visible');
+    setTimeout(() => {
+      setSplashState('fading');
+      setTimeout(() => setSplashState('hidden'), 300);
+    }, 1200);
   };
 
   const checkGithubUpdates = async () => {
@@ -687,6 +717,16 @@ export default function App() {
               </button>
             ))}
           </div>
+
+          {/* Replay Splash Button */}
+          <button
+            onClick={replaySplash}
+            className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-[#A87FFB] px-2.5 py-1.5 rounded-xl border border-slate-800 text-[10px] font-bold transition shadow-xs"
+            title="Replay Splash Screen"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#A87FFB]" />
+            <span className="hidden sm:inline">Splash</span>
+          </button>
         </div>
       </div>
 
@@ -710,7 +750,7 @@ export default function App() {
           <div
             className="flex w-full h-full transition-transform duration-300 ease-[cubic-bezier(0.2,0,0,1)]"
             style={{
-              transform: currentScreen === 'recents' ? 'translateX(0%)' : 'translateX(-100%)',
+              transform: currentScreen === 'settings' ? 'translateX(-100%)' : 'translateX(0%)',
             }}
           >
             {/* SCREEN 1: CALL CRAFT HOME */}
@@ -1129,13 +1169,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Toast for Copy Notification */}
-              {copiedToast && (
-                <div className="bg-[#1D1B20] text-white text-xs px-3.5 py-2 rounded-xl shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-150 sticky top-0 z-30">
-                  <Check className="w-4 h-4 text-[#10B981]" />
-                  <span className="font-medium">{copiedToast}</span>
-                </div>
-              )}
 
               {/* SECTION 1: PERMISSIONS & SYSTEM DIAGNOSTICS */}
               <div className="space-y-2">
@@ -1285,9 +1318,9 @@ export default function App() {
                   <div className="h-px bg-[#E7E0EC]/50" />
 
                   {/* Contact Developer (Official Gmail Icon) */}
-                  <a
-                    href="mailto:sachinmandawi@gmail.com?subject=CallCraft%20Inquiry"
-                    className="flex items-center justify-between gap-3 group text-left hover:opacity-90 transition py-1"
+                  <div
+                    onClick={() => triggerCopy('Email', 'sachinmandawi@gmail.com')}
+                    className="flex items-center justify-between gap-3 group text-left hover:opacity-90 transition py-1 cursor-pointer"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-8 h-8 rounded-lg bg-white border border-[#E7E0EC] flex items-center justify-center shrink-0 p-1">
@@ -1298,8 +1331,28 @@ export default function App() {
                         <div className="text-[10px] text-[#79747E]">sachinmandawi@gmail.com</div>
                       </div>
                     </div>
-                    <ExternalLink className="w-4 h-4 text-[#79747E] group-hover:text-[#6750A4] transition shrink-0" />
-                  </a>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          triggerCopy('Email', 'sachinmandawi@gmail.com');
+                        }}
+                        className="p-1.5 rounded-lg text-[#6750A4] hover:bg-[#6750A4]/10 transition"
+                        title="Copy Email"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <a
+                        href="mailto:sachinmandawi@gmail.com?subject=CallCraft%20Inquiry"
+                        onClick={(e) => e.stopPropagation()}
+                        className="p-1.5 rounded-lg text-[#79747E] hover:text-[#6750A4] hover:bg-black/5 transition"
+                        title="Send Email"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </div>
+                  </div>
 
                   <div className="h-px bg-[#E7E0EC]/50" />
 
@@ -2814,6 +2867,51 @@ export default function App() {
               >
                 <Phone className="w-8 h-8 fill-white text-white rotate-[135deg]" />
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Animated Splash Screen Overlay (Zero slide, clean fade-out reveal) */}
+        {splashState !== 'hidden' && (
+          <div
+            className={`absolute inset-0 bg-[#FEF7FF] z-50 flex flex-col items-center justify-between py-10 transition-opacity duration-300 ease-out pointer-events-none ${
+              splashState === 'fading' ? 'opacity-0' : 'opacity-100'
+            }`}
+          >
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="animate-in zoom-in-75 fade-in duration-700 ease-out flex flex-col items-center gap-4">
+                <div className="w-[88px] h-[88px] rounded-[24px] bg-white border border-[#E7E0EC] shadow-xl flex items-center justify-center overflow-hidden p-2">
+                  <img src="/logo.png" alt="CallCraft" className="w-full h-full object-contain rounded-[18px]" />
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center text-3xl font-black tracking-tight">
+                    <span className="text-[#1D1B20]">Call</span>
+                    <span className="text-[#6750A4]">Craft</span>
+                  </div>
+                  <p className="text-xs font-semibold text-[#79747E] tracking-widest uppercase mt-1">
+                    Modern Call Log Editor
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="text-[11px] font-bold text-[#79747E]/60 tracking-wider">
+              v1.0.0
+            </div>
+          </div>
+        )}
+
+        {/* Bottom Pill Toast Host (with custom shrink & slide-down exit animation) */}
+        {toastState && (
+          <div className="absolute inset-x-0 bottom-8 z-50 flex justify-center pointer-events-none px-4">
+            <div
+              className={`flex items-center gap-2 bg-[#1D1B20] text-white px-3.5 py-1.5 rounded-full shadow-2xl border border-white/10 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] ${
+                toastState.isExiting
+                  ? 'opacity-0 translate-y-4 scale-75'
+                  : 'opacity-100 translate-y-0 scale-100 animate-in fade-in slide-in-from-bottom-2 duration-150'
+              }`}
+            >
+              <Check className="w-3.5 h-3.5 text-[#10B981] stroke-[2.5]" />
+              <span className="text-xs font-semibold whitespace-nowrap">{toastState.message}</span>
             </div>
           </div>
         )}
