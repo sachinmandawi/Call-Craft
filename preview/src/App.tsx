@@ -468,6 +468,38 @@ export default function App() {
   const [durationMins, setDurationMins] = useState<string>('1');
   const [durationSecs, setDurationSecs] = useState<string>('0');
 
+  // Fast-Scroll Slider States (History & Home)
+  const [historyScrollFraction, setHistoryScrollFraction] = useState(0);
+  const [isHistoryScrolling, setIsHistoryScrolling] = useState(false);
+  const historyScrollTimerRef = useRef<any>(null);
+  const historyContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleHistoryScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    const maxScroll = scrollHeight - clientHeight;
+    if (maxScroll > 0) {
+      setHistoryScrollFraction(scrollTop / maxScroll);
+      setIsHistoryScrolling(true);
+      if (historyScrollTimerRef.current) clearTimeout(historyScrollTimerRef.current);
+      historyScrollTimerRef.current = setTimeout(() => setIsHistoryScrolling(false), 1200);
+    }
+  };
+
+  const [homeScrollFraction, setHomeScrollFraction] = useState(0);
+  const [isHomeScrolling, setIsHomeScrolling] = useState(false);
+  const homeScrollTimerRef = useRef<any>(null);
+
+  const handleHomeScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    const maxScroll = scrollHeight - clientHeight;
+    if (maxScroll > 0) {
+      setHomeScrollFraction(scrollTop / maxScroll);
+      setIsHomeScrolling(true);
+      if (homeScrollTimerRef.current) clearTimeout(homeScrollTimerRef.current);
+      homeScrollTimerRef.current = setTimeout(() => setIsHomeScrolling(false), 1200);
+    }
+  };
+
   // Google Phone Standard: Contact Grouping
   const groupedLogs: ContactCallGroup[] = useMemo(() => {
     const map = new Map<string, CallLogItem[]>();
@@ -511,6 +543,26 @@ export default function App() {
     if (viewingGroup) {
       const updated = groupedLogs.find((g) => g.key === viewingGroup.key);
       setViewingGroup(updated || null);
+    }
+  }, [groupedLogs]);
+
+  // Audit View Parameter Router for visual testing
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view');
+    if (!view) return;
+    if (view === 'contact_history' && groupedLogs.length > 0) {
+      setViewingGroup(groupedLogs[0]);
+    } else if (view === 'settings') {
+      setCurrentScreen('settings');
+    } else if (view === 'toast') {
+      showToast('Fake call scheduled in 3s');
+    } else if (view === 'add') {
+      openAddModal();
+    } else if (view === 'fake_modal') {
+      setIsFakeCallModalOpen(true);
+    } else if (view === 'fake_incoming') {
+      setFakeCallState('incoming');
     }
   }, [groupedLogs]);
 
@@ -997,7 +1049,11 @@ export default function App() {
                   }}
                 >
                   {/* Pane 1: All Groups */}
-                  <div className="w-1/2 h-full overflow-y-auto no-scrollbar divide-y divide-[#E7E0EC]/70 px-4 pb-24">
+                  <div className="relative w-1/2 h-full">
+                    <div
+                      onScroll={handleHomeScroll}
+                      className="w-full h-full overflow-y-auto no-scrollbar divide-y divide-[#E7E0EC]/70 px-4 pr-5 pb-24"
+                    >
                     {allFilteredGroups.length === 0 ? (
                       <div className="py-20 text-center text-sm text-[#79747E] font-medium">
                         No calls found
@@ -1103,8 +1159,39 @@ export default function App() {
                     )}
                   </div>
 
-                  {/* Pane 2: Missed Groups */}
-                  <div className="w-1/2 h-full overflow-y-auto no-scrollbar divide-y divide-[#E7E0EC]/70 px-4 pb-24">
+                  {/* Home Fast-Scroll Vertical Slider for All Calls */}
+                  {allFilteredGroups.length > 1 && (
+                    <div className="absolute right-1 top-2 bottom-24 w-2.5 flex items-center justify-center pointer-events-none z-10">
+                      <div className="w-1 h-full bg-[#6750A4]/15 rounded-full" />
+                      <div
+                        className={`absolute w-1.5 rounded-full bg-gradient-to-b from-[#7C5CE6] to-[#6750A4] shadow-sm transition-opacity duration-200 ${
+                          isHomeScrolling ? 'opacity-100' : 'opacity-60'
+                        }`}
+                        style={{
+                          height: `${Math.max(28, Math.min(90, (3 / allFilteredGroups.length) * 180))}px`,
+                          top: `calc(${homeScrollFraction * 100}% - ${homeScrollFraction * Math.max(28, Math.min(90, (3 / allFilteredGroups.length) * 180))}px)`,
+                        }}
+                      />
+                      {isHomeScrolling && allFilteredGroups.length > 3 && (
+                        <div
+                          className="absolute right-4 px-2 py-0.5 rounded-lg bg-[#1E1F24] text-white text-[9.5px] font-bold shadow-md border border-[#6750A4]/40 whitespace-nowrap animate-in fade-in duration-150"
+                          style={{
+                            top: `calc(${homeScrollFraction * 100}% - 8px)`,
+                          }}
+                        >
+                          {Math.min(allFilteredGroups.length, Math.round(homeScrollFraction * (allFilteredGroups.length - 1)) + 1)} / {allFilteredGroups.length}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Pane 2: Missed Groups */}
+                <div className="relative w-1/2 h-full">
+                  <div
+                    onScroll={handleHomeScroll}
+                    className="w-full h-full overflow-y-auto no-scrollbar divide-y divide-[#E7E0EC]/70 px-4 pr-5 pb-24"
+                  >
                     {missedFilteredGroups.length === 0 ? (
                       <div className="py-20 text-center text-sm text-[#79747E] font-medium">
                         No missed calls found
@@ -1176,8 +1263,35 @@ export default function App() {
                       })
                     )}
                   </div>
+
+                  {/* Home Fast-Scroll Vertical Slider for Missed Calls */}
+                  {missedFilteredGroups.length > 1 && (
+                    <div className="absolute right-1 top-2 bottom-24 w-2.5 flex items-center justify-center pointer-events-none z-10">
+                      <div className="w-1 h-full bg-[#6750A4]/15 rounded-full" />
+                      <div
+                        className={`absolute w-1.5 rounded-full bg-gradient-to-b from-[#7C5CE6] to-[#6750A4] shadow-sm transition-opacity duration-200 ${
+                          isHomeScrolling ? 'opacity-100' : 'opacity-60'
+                        }`}
+                        style={{
+                          height: `${Math.max(28, Math.min(90, (3 / missedFilteredGroups.length) * 180))}px`,
+                          top: `calc(${homeScrollFraction * 100}% - ${homeScrollFraction * Math.max(28, Math.min(90, (3 / missedFilteredGroups.length) * 180))}px)`,
+                        }}
+                      />
+                      {isHomeScrolling && missedFilteredGroups.length > 3 && (
+                        <div
+                          className="absolute right-4 px-2 py-0.5 rounded-lg bg-[#1E1F24] text-white text-[9.5px] font-bold shadow-md border border-[#6750A4]/40 whitespace-nowrap animate-in fade-in duration-150"
+                          style={{
+                            top: `calc(${homeScrollFraction * 100}% - 8px)`,
+                          }}
+                        >
+                          {Math.min(missedFilteredGroups.length, Math.round(homeScrollFraction * (missedFilteredGroups.length - 1)) + 1)} / {missedFilteredGroups.length}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
+            </div>
 
               {/* Material 3 FAB */}
               {!isSelectionMode && (
@@ -1681,8 +1795,8 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Quick Actions: + Log Call & Delete All */}
-              <div className="grid grid-cols-2 gap-2 mb-3 shrink-0">
+              {/* Quick Actions: + Log Call & Delete All (Sleek Compact Pills) */}
+              <div className="flex items-center gap-2 mb-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => {
@@ -1690,18 +1804,18 @@ export default function App() {
                     setViewingGroup(null);
                     openAddModal({ name: target.name, number: target.number, simSlot: target.latestItem.simSlot });
                   }}
-                  className="py-2.5 rounded-xl bg-[#6750A4] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs hover:bg-[#553F8D] transition"
+                  className="flex-1 h-8 rounded-full bg-[#6750A4] text-white text-[11.5px] font-semibold flex items-center justify-center gap-1.5 shadow-xs hover:bg-[#553F8D] transition active:scale-98"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-3.5 h-3.5" />
                   <span>Log Call</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleDeleteAllForGroup(viewingGroup)}
-                  className="py-2.5 rounded-xl bg-rose-50 text-[#F43F5E] border border-rose-200 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-rose-100 transition"
+                  className="flex-1 h-8 rounded-full bg-rose-50 text-[#F43F5E] border border-rose-200 text-[11.5px] font-semibold flex items-center justify-center gap-1.5 hover:bg-rose-100 transition active:scale-98"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                   <span>Delete All</span>
                 </button>
               </div>
@@ -1713,8 +1827,13 @@ export default function App() {
                 </span>
               </div>
 
-              {/* Smooth Scrollable Call History Cards (No cutting off, no overlap) */}
-              <div className="flex-1 overflow-y-auto no-scrollbar space-y-2 pr-0.5 min-h-0">
+              {/* Smooth Scrollable Call History Cards with Eye-Catching Vertical Slider */}
+              <div className="relative flex-1 min-h-0">
+                <div
+                  ref={historyContainerRef}
+                  onScroll={handleHistoryScroll}
+                  className="h-full overflow-y-auto no-scrollbar space-y-2 pr-3 min-h-0"
+                >
                 {viewingGroup.calls.map((call) => {
                   const typeMeta = CALL_TYPES.find((c) => c.type === call.type) || CALL_TYPES[0];
                   const Icon = typeMeta.icon;
@@ -1773,8 +1892,38 @@ export default function App() {
                 {/* Generous bottom spacing so the last card is never cut off or touching the phone bezel */}
                 <div className="h-6 shrink-0" />
               </div>
+
+              {/* Eye-Catching Vertical Scroll Slider */}
+              {viewingGroup.calls.length > 1 && (
+                <div className="absolute right-0 top-1 bottom-1 w-2.5 flex items-center justify-center pointer-events-none">
+                  {/* Background Track */}
+                  <div className="w-1 h-full bg-[#6750A4]/15 rounded-full" />
+                  {/* Thumb */}
+                  <div
+                    className={`absolute w-1.5 rounded-full bg-gradient-to-b from-[#7C5CE6] to-[#6750A4] shadow-sm transition-opacity duration-200 ${
+                      isHistoryScrolling ? 'opacity-100' : 'opacity-60'
+                    }`}
+                    style={{
+                      height: `${Math.max(28, Math.min(100, (4 / viewingGroup.calls.length) * 220))}px`,
+                      top: `calc(${historyScrollFraction * 100}% - ${historyScrollFraction * Math.max(28, Math.min(100, (4 / viewingGroup.calls.length) * 220))}px)`,
+                    }}
+                  />
+                  {/* Live Position Counter Badge */}
+                  {isHistoryScrolling && viewingGroup.calls.length > 3 && (
+                    <div
+                      className="absolute right-4 px-2 py-0.5 rounded-lg bg-[#1E1F24] text-white text-[9.5px] font-bold shadow-md border border-[#6750A4]/40 whitespace-nowrap animate-in fade-in duration-150"
+                      style={{
+                        top: `calc(${historyScrollFraction * 100}% - 8px)`,
+                      }}
+                    >
+                      {Math.min(viewingGroup.calls.length, Math.round(historyScrollFraction * (viewingGroup.calls.length - 1)) + 1)} / {viewingGroup.calls.length}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
+        </div>
         )}
 
         {/* Modal Bottom Sheet for Add / Edit */}
@@ -3013,18 +3162,22 @@ export default function App() {
           </div>
         )}
 
-        {/* Bottom Pill Toast Host (with custom shrink & slide-down exit animation) */}
+        {/* Bottom Pill Toast Host (with custom shrink & slide-down exit animation, elevated above FAB) */}
         {toastState && (
-          <div className="absolute inset-x-0 bottom-8 z-50 flex justify-center pointer-events-none px-4">
+          <div className="absolute inset-x-0 bottom-28 z-50 flex justify-center pointer-events-none px-4">
             <div
-              className={`flex items-center gap-2 bg-[#1D1B20] text-white px-3.5 py-1.5 rounded-full shadow-2xl border border-white/10 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] ${
+              className={`flex items-center gap-1.5 bg-[#1E1F24] text-white px-3 py-1 rounded-full shadow-xl border border-white/10 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] ${
                 toastState.isExiting
-                  ? 'opacity-0 translate-y-4 scale-75'
+                  ? 'opacity-0 translate-y-3 scale-75'
                   : 'opacity-100 translate-y-0 scale-100 animate-in fade-in slide-in-from-bottom-2 duration-150'
               }`}
             >
-              <Check className="w-3.5 h-3.5 text-[#10B981] stroke-[2.5]" />
-              <span className="text-xs font-semibold whitespace-nowrap">{toastState.message}</span>
+              {toastState.message.toLowerCase().includes('scheduled') || toastState.message.toLowerCase().includes('fake call') ? (
+                <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+              ) : (
+                <Check className="w-3.5 h-3.5 text-[#10B981] stroke-[2.5]" />
+              )}
+              <span className="text-[11.5px] font-medium tracking-tight whitespace-nowrap">{toastState.message}</span>
             </div>
           </div>
         )}

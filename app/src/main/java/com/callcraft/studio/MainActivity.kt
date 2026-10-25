@@ -42,6 +42,10 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.ui.zIndex
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import kotlin.math.roundToInt
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.Canvas
@@ -809,38 +813,55 @@ fun CallLogEditorApp(repository: CallLogRepository) {
                                     )
                                 }
                             } else {
-                                LazyColumn(
-                                    modifier = Modifier.fillMaxSize(),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                                    contentPadding = PaddingValues(bottom = 88.dp)
-                                ) {
-                                    items(currentList, key = { it.key }) { group ->
-                                        val groupCallIds = group.calls.map { it.id }.toSet()
-                                        val isItemSelected = groupCallIds.all { selectedItemIds.contains(it) }
-                                        ContactGroupCardView(
-                                            group = group,
-                                            isSelectionMode = isSelectionMode,
-                                            isSelected = isItemSelected,
-                                            onClick = {
-                                                if (isSelectionMode) {
-                                                    selectedItemIds = if (isItemSelected) {
-                                                        val remaining = selectedItemIds - groupCallIds
-                                                        if (remaining.isEmpty()) isSelectionMode = false
-                                                        remaining
+                                val mainListState = rememberLazyListState()
+                                Box(modifier = Modifier.fillMaxSize()) {
+                                    LazyColumn(
+                                        state = mainListState,
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(end = if (currentList.size > 1) 12.dp else 0.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                        contentPadding = PaddingValues(bottom = 88.dp)
+                                    ) {
+                                        items(currentList, key = { it.key }) { group ->
+                                            val groupCallIds = group.calls.map { it.id }.toSet()
+                                            val isItemSelected = groupCallIds.all { selectedItemIds.contains(it) }
+                                            ContactGroupCardView(
+                                                group = group,
+                                                isSelectionMode = isSelectionMode,
+                                                isSelected = isItemSelected,
+                                                onClick = {
+                                                    if (isSelectionMode) {
+                                                        selectedItemIds = if (isItemSelected) {
+                                                            val remaining = selectedItemIds - groupCallIds
+                                                            if (remaining.isEmpty()) isSelectionMode = false
+                                                            remaining
+                                                        } else {
+                                                            selectedItemIds + groupCallIds
+                                                        }
                                                     } else {
-                                                        selectedItemIds + groupCallIds
+                                                        // Google Phone Standard: Open Call History Sheet
+                                                        viewingGroup = group
                                                     }
-                                                } else {
-                                                    // Google Phone Standard: Open Call History Sheet
-                                                    viewingGroup = group
+                                                },
+                                                onLongClick = {
+                                                    if (!isSelectionMode) {
+                                                        isSelectionMode = true
+                                                        selectedItemIds = groupCallIds
+                                                    }
                                                 }
-                                            },
-                                            onLongClick = {
-                                                if (!isSelectionMode) {
-                                                    isSelectionMode = true
-                                                    selectedItemIds = groupCallIds
-                                                }
-                                            }
+                                            )
+                                        }
+                                    }
+
+                                    if (currentList.size > 1) {
+                                        VerticalScrollSlider(
+                                            listState = mainListState,
+                                            totalItems = currentList.size,
+                                            modifier = Modifier
+                                                .align(Alignment.CenterEnd)
+                                                .fillMaxHeight()
+                                                .padding(top = 4.dp, bottom = 92.dp, end = 2.dp)
                                         )
                                     }
                                 }
@@ -1122,11 +1143,7 @@ fun CallLogEditorApp(repository: CallLogRepository) {
                     fakeCallHelper.startRinging(sound, vibrate)
                 } else {
                     fakeCallCountdownSec = delaySeconds
-                    Toast.makeText(
-                        context,
-                        "Fake call scheduled in ${if (delaySeconds >= 60) "${delaySeconds / 60}m ${delaySeconds % 60}s" else "${delaySeconds}s"}",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    showBottomToast("Fake call scheduled in ${if (delaySeconds >= 60) "${delaySeconds / 60}m ${delaySeconds % 60}s" else "${delaySeconds}s"}")
                 }
             }
         )
@@ -1173,11 +1190,7 @@ fun CallLogEditorApp(repository: CallLogRepository) {
                             durationSeconds = durationSec,
                             simSlot = fakeCallSimSlot
                         )
-                        Toast.makeText(
-                            context,
-                            "Fake call saved to Call Log (${formatDuration(durationSec)})",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        showBottomToast("Saved to Call Log (${formatDuration(durationSec)})")
                         kotlinx.coroutines.delay(150)
                         refreshLogs()
                     }
@@ -1186,7 +1199,7 @@ fun CallLogEditorApp(repository: CallLogRepository) {
         )
     }
 
-    // Bottom Pill Toast Host (with custom shrink and slide-down exit animation)
+    // Bottom Pill Toast Host (with custom shrink and slide-down exit animation, elevated above FAB)
     AnimatedVisibility(
         visible = bottomToastMessage != null,
         enter = fadeIn(tween(150)) + slideInVertically(initialOffsetY = { it / 2 }) + scaleIn(initialScale = 0.85f),
@@ -1194,29 +1207,32 @@ fun CallLogEditorApp(repository: CallLogRepository) {
         modifier = Modifier
             .fillMaxSize()
             .wrapContentSize(Alignment.BottomCenter)
-            .padding(bottom = 32.dp)
+            .padding(bottom = 88.dp)
             .zIndex(100f)
     ) {
         Surface(
             shape = RoundedCornerShape(50),
-            color = Color(0xFF1D1B20),
-            shadowElevation = 8.dp
+            color = Color(0xFF1E1F24),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+            shadowElevation = 6.dp
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+                val isTimer = bottomToastMessage?.contains("scheduled", ignoreCase = true) == true ||
+                              bottomToastMessage?.contains("Fake call", ignoreCase = true) == true
                 Icon(
-                    Icons.Default.Check,
+                    imageVector = if (isTimer) Icons.Default.Bolt else Icons.Default.Check,
                     contentDescription = null,
-                    tint = StatusIncoming,
-                    modifier = Modifier.size(14.dp)
+                    tint = if (isTimer) Color(0xFFF59E0B) else StatusIncoming,
+                    modifier = Modifier.size(13.dp)
                 )
                 Text(
                     text = bottomToastMessage ?: "",
                     color = Color.White,
-                    fontSize = 12.sp,
+                    fontSize = 11.5.sp,
                     fontWeight = FontWeight.SemiBold
                 )
             }
@@ -1375,27 +1391,137 @@ fun ContactGroupCardView(
     }
 }
 
-// Modern Sleek Vertical Scrollbar Slider Modifier
-fun Modifier.simpleVerticalScrollbar(
-    state: LazyListState,
-    width: androidx.compose.ui.unit.Dp = 4.dp,
-    color: Color = LilacPrimary.copy(alpha = 0.4f)
-): Modifier = this.drawWithContent {
-    drawContent()
-    val firstVisible = state.layoutInfo.visibleItemsInfo.firstOrNull()?.index
-    val totalCount = state.layoutInfo.totalItemsCount
-    val visibleCount = state.layoutInfo.visibleItemsInfo.size
-    if (firstVisible != null && totalCount > visibleCount && totalCount > 0) {
-        val elementHeight = this.size.height / totalCount
-        val scrollbarOffsetY = firstVisible * elementHeight
-        val scrollbarHeight = (visibleCount * elementHeight).coerceAtLeast(24.dp.toPx())
+// Eye-Catching Vertical Fast-Scroll Slider with Live Counter & Drag Support
+@Composable
+fun VerticalScrollSlider(
+    listState: LazyListState,
+    totalItems: Int,
+    modifier: Modifier = Modifier
+) {
+    val visibleCount by remember { derivedStateOf { listState.layoutInfo.visibleItemsInfo.size.coerceAtLeast(1) } }
+    if (totalItems <= 1) return
 
-        drawRoundRect(
-            color = color,
-            topLeft = Offset(this.size.width - width.toPx(), scrollbarOffsetY),
-            size = Size(width.toPx(), scrollbarHeight),
-            cornerRadius = CornerRadius(width.toPx() / 2, width.toPx() / 2)
+    val coroutineScope = rememberCoroutineScope()
+    var sliderHeightPx by remember { mutableFloatStateOf(0f) }
+    var isDragging by remember { mutableStateOf(false) }
+
+    val isIndicatorActive = listState.isScrollInProgress || isDragging
+
+    val alphaAnim by animateFloatAsState(
+        targetValue = if (isIndicatorActive) 1f else 0.55f,
+        animationSpec = tween(durationMillis = 250),
+        label = "sliderAlpha"
+    )
+
+    val firstVisibleIndex by remember { derivedStateOf { listState.firstVisibleItemIndex } }
+    val firstVisibleOffset by remember { derivedStateOf { listState.firstVisibleItemScrollOffset } }
+    val firstItemSize by remember {
+        derivedStateOf { listState.layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 1 }
+    }
+
+    val itemFraction = (firstVisibleOffset.toFloat() / firstItemSize.toFloat().coerceAtLeast(1f)).coerceIn(0f, 1f)
+    val smoothIndex = firstVisibleIndex.toFloat() + itemFraction
+    val maxScroll = (totalItems - visibleCount).coerceAtLeast(1).toFloat()
+    val scrollFraction = (smoothIndex / maxScroll).coerceIn(0f, 1f)
+
+    BoxWithConstraints(
+        modifier = modifier
+            .width(36.dp)
+            .onGloballyPositioned { layoutCoordinates ->
+                sliderHeightPx = layoutCoordinates.size.height.toFloat()
+            }
+            .pointerInput(totalItems) {
+                detectVerticalDragGestures(
+                    onDragStart = { offset ->
+                        isDragging = true
+                        if (sliderHeightPx > 0) {
+                            val fraction = (offset.y / sliderHeightPx).coerceIn(0f, 1f)
+                            val targetIndex = (fraction * (totalItems - 1)).roundToInt().coerceIn(0, totalItems - 1)
+                            coroutineScope.launch {
+                                listState.scrollToItem(targetIndex)
+                            }
+                        }
+                    },
+                    onDragEnd = { isDragging = false },
+                    onDragCancel = { isDragging = false },
+                    onVerticalDrag = { change, _ ->
+                        change.consume()
+                        if (sliderHeightPx > 0) {
+                            val fraction = (change.position.y / sliderHeightPx).coerceIn(0f, 1f)
+                            val targetIndex = (fraction * (totalItems - 1)).roundToInt().coerceIn(0, totalItems - 1)
+                            coroutineScope.launch {
+                                listState.scrollToItem(targetIndex)
+                            }
+                        }
+                    }
+                )
+            },
+        contentAlignment = Alignment.TopEnd
+    ) {
+        val totalHeightDp = maxHeight
+        val minThumbHeightDp = 34.dp
+        val computedThumbHeightDp = (totalHeightDp * (visibleCount.toFloat() / totalItems.toFloat()))
+            .coerceIn(minThumbHeightDp, totalHeightDp * 0.7f)
+        val availableTrackLengthDp = (totalHeightDp - computedThumbHeightDp).coerceAtLeast(0.dp)
+        val thumbOffsetDp = availableTrackLengthDp * scrollFraction
+
+        // Subtle rounded background track
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 4.dp)
+                .fillMaxHeight()
+                .width(4.dp)
+                .clip(RoundedCornerShape(50))
+                .background(LilacPrimary.copy(alpha = 0.12f))
         )
+
+        // Eye-catching gradient thumb pill
+        Box(
+            modifier = Modifier
+                .padding(end = 3.dp)
+                .offset(y = thumbOffsetDp)
+                .width(6.dp)
+                .height(computedThumbHeightDp)
+                .clip(RoundedCornerShape(50))
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            Color(0xFF7C5CE6),
+                            LilacPrimary
+                        )
+                    )
+                )
+                .alpha(alphaAnim)
+        )
+
+        // Floating Position Counter Badge (showing exact position / total)
+        AnimatedVisibility(
+            visible = isIndicatorActive && totalItems > 4,
+            enter = fadeIn(tween(150)) + scaleIn(initialScale = 0.85f),
+            exit = fadeOut(tween(250)),
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .offset(
+                    x = (-16).dp,
+                    y = (thumbOffsetDp - 4.dp).coerceIn(0.dp, (totalHeightDp - 26.dp).coerceAtLeast(0.dp))
+                )
+        ) {
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = Color(0xFF1E1F24),
+                border = androidx.compose.foundation.BorderStroke(1.dp, LilacPrimary.copy(alpha = 0.35f)),
+                shadowElevation = 6.dp
+            ) {
+                Text(
+                    text = "${(firstVisibleIndex + 1).coerceAtMost(totalItems)} / $totalItems",
+                    color = Color.White,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                )
+            }
+        }
     }
 }
 
@@ -1501,42 +1627,47 @@ fun ContactHistoryBottomSheet(
                 }
             }
 
-            // Quick Actions: + Log Call & Delete All History
+            // Quick Actions: + Log Call & Delete All History (Sleek Compact Pills)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Surface(
                     onClick = onLogNewCall,
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(50),
                     color = LilacPrimary,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(34.dp)
                 ) {
                     Row(
-                        modifier = Modifier.padding(vertical = 11.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Log Call", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        Icon(Icons.Default.Add, contentDescription = null, tint = Color.White, modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text("Log Call", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
 
                 Surface(
                     onClick = { showConfirmDeleteAll = true },
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(50),
                     color = StatusMissed.copy(alpha = 0.12f),
-                    modifier = Modifier.weight(1f)
+                    border = androidx.compose.foundation.BorderStroke(1.dp, StatusMissed.copy(alpha = 0.25f)),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(34.dp)
                 ) {
                     Row(
-                        modifier = Modifier.padding(vertical = 11.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.Delete, contentDescription = null, tint = StatusMissed, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Delete All", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = StatusMissed)
+                        Icon(Icons.Default.Delete, contentDescription = null, tint = StatusMissed, modifier = Modifier.size(15.dp))
+                        Spacer(modifier = Modifier.width(5.dp))
+                        Text("Delete All", fontSize = 11.5.sp, fontWeight = FontWeight.Bold, color = StatusMissed)
                     }
                 }
             }
@@ -1557,104 +1688,120 @@ fun ContactHistoryBottomSheet(
                 )
             }
 
-            // History Timeline List
+            // History Timeline List with Eye-Catching Vertical Scroll Slider
             val listState = rememberLazyListState()
-            LazyColumn(
-                state = listState,
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 390.dp),
-                contentPadding = PaddingValues(bottom = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .heightIn(max = 410.dp)
             ) {
-                items(group.calls, key = { it.id }) { call ->
-                    val (icon, color) = when (call.type) {
-                        CallLog.Calls.INCOMING_TYPE -> Icons.AutoMirrored.Filled.CallReceived to StatusIncoming
-                        CallLog.Calls.OUTGOING_TYPE -> Icons.AutoMirrored.Filled.CallMade to StatusOutgoing
-                        CallLog.Calls.MISSED_TYPE -> Icons.AutoMirrored.Filled.CallMissed to StatusMissed
-                        CallLog.Calls.REJECTED_TYPE -> Icons.AutoMirrored.Filled.PhoneMissed to StatusRejected
-                        else -> Icons.Default.Call to Color.Gray
-                    }
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(end = if (group.calls.size > 1) 14.dp else 0.dp),
+                    contentPadding = PaddingValues(bottom = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(group.calls, key = { it.id }) { call ->
+                        val (icon, color) = when (call.type) {
+                            CallLog.Calls.INCOMING_TYPE -> Icons.AutoMirrored.Filled.CallReceived to StatusIncoming
+                            CallLog.Calls.OUTGOING_TYPE -> Icons.AutoMirrored.Filled.CallMade to StatusOutgoing
+                            CallLog.Calls.MISSED_TYPE -> Icons.AutoMirrored.Filled.CallMissed to StatusMissed
+                            CallLog.Calls.REJECTED_TYPE -> Icons.AutoMirrored.Filled.PhoneMissed to StatusRejected
+                            else -> Icons.Default.Call to Color.Gray
+                        }
 
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = LilacSurface,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onEditCall(call) }
-                    ) {
-                        Row(
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = LilacSurface,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                                .clickable { onEditCall(call) }
                         ) {
-                            Box(
+                            Row(
                                 modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(color.copy(alpha = 0.12f)),
-                                contentAlignment = Alignment.Center
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
-                            }
-
-                            Spacer(modifier = Modifier.width(10.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(color.copy(alpha = 0.12f)),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Text(
-                                        text = CallLogItem.typeLabel(call.type),
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = LilacText
-                                    )
-                                    Surface(
-                                        shape = RoundedCornerShape(4.dp),
-                                        color = if (call.simSlot == 1) LilacPrimaryContainer else Color(0xFFE0F2FE)
+                                    Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(16.dp))
+                                }
+
+                                Spacer(modifier = Modifier.width(10.dp))
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(5.dp)
                                     ) {
                                         Text(
-                                            text = if (call.simSlot == 1) "SIM 1" else "SIM 2",
-                                            fontSize = 8.sp,
-                                            fontWeight = FontWeight.Black,
-                                            color = if (call.simSlot == 1) LilacPrimary else Color(0xFF0284C7),
-                                            modifier = Modifier.padding(horizontal = 3.dp, vertical = 1.dp)
+                                            text = CallLogItem.typeLabel(call.type),
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = LilacText
                                         )
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = if (call.simSlot == 1) LilacPrimaryContainer else Color(0xFFE0F2FE)
+                                        ) {
+                                            Text(
+                                                text = if (call.simSlot == 1) "SIM 1" else "SIM 2",
+                                                fontSize = 8.sp,
+                                                fontWeight = FontWeight.Black,
+                                                color = if (call.simSlot == 1) LilacPrimary else Color(0xFF0284C7),
+                                                modifier = Modifier.padding(horizontal = 3.dp, vertical = 1.dp)
+                                            )
+                                        }
                                     }
-                                }
-                                Text(
-                                    text = "${formatFullDateTime(call.dateMillis)} ${if (call.durationSeconds > 0) "• ${formatDuration(call.durationSeconds)}" else ""}",
-                                    fontSize = 11.sp,
-                                    color = LilacTextMuted,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                modifier = Modifier.padding(end = 2.dp)
-                            ) {
-                                IconButton(
-                                    onClick = { onEditCall(call) },
-                                    modifier = Modifier.size(28.dp)
-                                ) {
-                                    Icon(Icons.Default.Edit, contentDescription = "Edit Call", tint = LilacPrimary, modifier = Modifier.size(15.dp))
+                                    Text(
+                                        text = "${formatFullDateTime(call.dateMillis)} ${if (call.durationSeconds > 0) "• ${formatDuration(call.durationSeconds)}" else ""}",
+                                        fontSize = 11.sp,
+                                        color = LilacTextMuted,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                 }
 
-                                IconButton(
-                                    onClick = { onDeleteCall(call.id) },
-                                    modifier = Modifier.size(28.dp)
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                    modifier = Modifier.padding(end = 2.dp)
                                 ) {
-                                    Icon(Icons.Default.Delete, contentDescription = "Delete Call", tint = StatusMissed, modifier = Modifier.size(15.dp))
+                                    IconButton(
+                                        onClick = { onEditCall(call) },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(Icons.Default.Edit, contentDescription = "Edit Call", tint = LilacPrimary, modifier = Modifier.size(15.dp))
+                                    }
+
+                                    IconButton(
+                                        onClick = { onDeleteCall(call.id) },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Delete Call", tint = StatusMissed, modifier = Modifier.size(15.dp))
+                                    }
                                 }
                             }
                         }
                     }
                 }
+
+                // Eye-Catching Vertical Fast-Scroll Slider
+                VerticalScrollSlider(
+                    listState = listState,
+                    totalItems = group.calls.size,
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .fillMaxHeight()
+                        .padding(vertical = 4.dp)
+                )
             }
         }
     }
@@ -2738,32 +2885,8 @@ fun SettingsScreen(
         refreshDiagnostics()
     }
 
-    fun requestPermissionWithSystemFallback(permissions: Array<String>) {
-        val activity = context as? Activity
-        val ungranted = permissions.filter {
-            ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED
-        }
-        if (ungranted.isEmpty()) {
-            refreshDiagnostics()
-            return
-        }
-
-        // 1. Launch phone's default system popup
-        permissionLauncher.launch(ungranted.toTypedArray())
-
-        // 2. If OS has permanently silenced the dialog (shouldShowRationale is false on an ungranted permission):
-        val firstPerm = ungranted.first()
-        val canShowRationale = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(activity, firstPerm)
-        if (activity != null && !canShowRationale) {
-            try {
-                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                    data = Uri.fromParts("package", context.packageName, null)
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(intent)
-                onShowToast("Allow permission in phone Settings")
-            } catch (_: Exception) {}
-        }
+    fun requestPermission(permissions: Array<String>) {
+        permissionLauncher.launch(permissions)
     }
 
     LaunchedEffect(Unit) {
@@ -3053,7 +3176,7 @@ fun SettingsScreen(
                         title = "Call Logs Access",
                         isGranted = callLogGranted,
                         onGrant = {
-                            requestPermissionWithSystemFallback(
+                            requestPermission(
                                 arrayOf(
                                     Manifest.permission.READ_CALL_LOG,
                                     Manifest.permission.WRITE_CALL_LOG
@@ -3067,7 +3190,7 @@ fun SettingsScreen(
                         title = "Contacts Access",
                         isGranted = contactsGranted,
                         onGrant = {
-                            requestPermissionWithSystemFallback(arrayOf(Manifest.permission.READ_CONTACTS))
+                            requestPermission(arrayOf(Manifest.permission.READ_CONTACTS))
                         }
                     )
 
@@ -3076,7 +3199,7 @@ fun SettingsScreen(
                         title = "Phone State Access",
                         isGranted = phoneStateGranted,
                         onGrant = {
-                            requestPermissionWithSystemFallback(arrayOf(Manifest.permission.READ_PHONE_STATE))
+                            requestPermission(arrayOf(Manifest.permission.READ_PHONE_STATE))
                         }
                     )
 
