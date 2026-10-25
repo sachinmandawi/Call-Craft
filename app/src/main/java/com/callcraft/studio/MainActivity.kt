@@ -853,17 +853,6 @@ fun CallLogEditorApp(repository: CallLogRepository) {
                                             )
                                         }
                                     }
-
-                                    if (currentList.size > 1) {
-                                        VerticalScrollSlider(
-                                            listState = mainListState,
-                                            totalItems = currentList.size,
-                                            modifier = Modifier
-                                                .align(Alignment.CenterEnd)
-                                                .fillMaxHeight()
-                                                .padding(top = 4.dp, bottom = 92.dp, end = 2.dp)
-                                        )
-                                    }
                                 }
                             }
                         }
@@ -1408,9 +1397,15 @@ fun VerticalScrollSlider(
     val isIndicatorActive = listState.isScrollInProgress || isDragging
 
     val alphaAnim by animateFloatAsState(
-        targetValue = if (isIndicatorActive) 1f else 0.55f,
-        animationSpec = tween(durationMillis = 250),
+        targetValue = if (isIndicatorActive) 1f else 0.2f,
+        animationSpec = tween(durationMillis = if (isIndicatorActive) 150 else 500),
         label = "sliderAlpha"
+    )
+
+    val thumbWidthAnim by animateDpAsState(
+        targetValue = if (isIndicatorActive) 5.dp else 3.dp,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "thumbWidth"
     )
 
     val firstVisibleIndex by remember { derivedStateOf { listState.firstVisibleItemIndex } }
@@ -1426,7 +1421,7 @@ fun VerticalScrollSlider(
 
     BoxWithConstraints(
         modifier = modifier
-            .width(36.dp)
+            .width(28.dp)
             .onGloballyPositioned { layoutCoordinates ->
                 sliderHeightPx = layoutCoordinates.size.height.toFloat()
             }
@@ -1465,23 +1460,29 @@ fun VerticalScrollSlider(
         val availableTrackLengthDp = (totalHeightDp - computedThumbHeightDp).coerceAtLeast(0.dp)
         val thumbOffsetDp = availableTrackLengthDp * scrollFraction
 
+        val smoothOffsetDp by animateDpAsState(
+            targetValue = thumbOffsetDp,
+            animationSpec = spring(stiffness = Spring.StiffnessMediumLow, dampingRatio = Spring.DampingRatioNoBouncy),
+            label = "smoothOffset"
+        )
+
         // Subtle rounded background track
         Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
                 .padding(end = 4.dp)
                 .fillMaxHeight()
-                .width(4.dp)
+                .width(2.5.dp)
                 .clip(RoundedCornerShape(50))
-                .background(LilacPrimary.copy(alpha = 0.12f))
+                .background(LilacPrimary.copy(alpha = 0.12f * alphaAnim))
         )
 
-        // Eye-catching gradient thumb pill
+        // Ultra-smooth smart gradient thumb pill (No number badge, smooth glide)
         Box(
             modifier = Modifier
                 .padding(end = 3.dp)
-                .offset(y = thumbOffsetDp)
-                .width(6.dp)
+                .offset(y = smoothOffsetDp)
+                .width(thumbWidthAnim)
                 .height(computedThumbHeightDp)
                 .clip(RoundedCornerShape(50))
                 .background(
@@ -1494,34 +1495,6 @@ fun VerticalScrollSlider(
                 )
                 .alpha(alphaAnim)
         )
-
-        // Floating Position Counter Badge (showing exact position / total)
-        AnimatedVisibility(
-            visible = isIndicatorActive && totalItems > 4,
-            enter = fadeIn(tween(150)) + scaleIn(initialScale = 0.85f),
-            exit = fadeOut(tween(250)),
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .offset(
-                    x = (-16).dp,
-                    y = (thumbOffsetDp - 4.dp).coerceIn(0.dp, (totalHeightDp - 26.dp).coerceAtLeast(0.dp))
-                )
-        ) {
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = Color(0xFF1E1F24),
-                border = androidx.compose.foundation.BorderStroke(1.dp, LilacPrimary.copy(alpha = 0.35f)),
-                shadowElevation = 6.dp
-            ) {
-                Text(
-                    text = "${(firstVisibleIndex + 1).coerceAtMost(totalItems)} / $totalItems",
-                    color = Color.White,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
-                )
-            }
-        }
     }
 }
 
@@ -1792,16 +1765,6 @@ fun ContactHistoryBottomSheet(
                         }
                     }
                 }
-
-                // Eye-Catching Vertical Fast-Scroll Slider
-                VerticalScrollSlider(
-                    listState = listState,
-                    totalItems = group.calls.size,
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .fillMaxHeight()
-                        .padding(vertical = 4.dp)
-                )
             }
         }
     }

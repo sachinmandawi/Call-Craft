@@ -110,65 +110,128 @@ const CALL_TYPES: {
 const INITIAL_LOGS: CallLogItem[] = [
   {
     id: '1',
-    name: 'Shalini 🐼',
-    number: '+91 62617 49807',
+    name: 'Aarav Sharma',
+    number: '+91 98765 43210',
     type: 3,
-    date: new Date(Date.now() - 1000 * 60 * 35),
+    date: new Date(Date.now() - 1000 * 60 * 25),
     durationSeconds: 0,
     simSlot: 1,
   },
   {
     id: '2',
-    name: 'Shalini 🐼',
-    number: '+91 62617 49807',
+    name: 'Aarav Sharma',
+    number: '+91 98765 43210',
     type: 3,
-    date: new Date(Date.now() - 1000 * 60 * 75),
+    date: new Date(Date.now() - 1000 * 60 * 55),
     durationSeconds: 0,
     simSlot: 1,
   },
   {
     id: '3',
-    name: 'Shalini 🐼',
-    number: '+91 62617 49807',
+    name: 'Aarav Sharma',
+    number: '+91 98765 43210',
     type: 3,
-    date: new Date(Date.now() - 1000 * 60 * 120),
+    date: new Date(Date.now() - 1000 * 60 * 95),
     durationSeconds: 0,
     simSlot: 1,
   },
   {
     id: '4',
-    name: 'Shalini 🐼',
-    number: '+91 62617 49807',
+    name: 'Aarav Sharma',
+    number: '+91 98765 43210',
     type: 1,
     date: new Date(Date.now() - 1000 * 60 * 60 * 4),
-    durationSeconds: 310,
+    durationSeconds: 765,
     simSlot: 1,
   },
   {
     id: '5',
     name: 'Aarav Sharma',
     number: '+91 98765 43210',
-    type: 1,
-    date: new Date(Date.now() - 1000 * 60 * 60 * 6),
-    durationSeconds: 342,
+    type: 2,
+    date: new Date(Date.now() - 1000 * 60 * 60 * 26),
+    durationSeconds: 240,
     simSlot: 1,
   },
   {
     id: '6',
-    name: 'Priya Nair',
-    number: '+91 91234 56789',
-    type: 2,
-    date: new Date(Date.now() - 1000 * 60 * 60 * 12),
-    durationSeconds: 125,
-    simSlot: 2,
+    name: 'Aarav Sharma',
+    number: '+91 98765 43210',
+    type: 1,
+    date: new Date(Date.now() - 1000 * 60 * 60 * 52),
+    durationSeconds: 180,
+    simSlot: 1,
   },
   {
     id: '7',
-    name: 'Customer Support',
+    name: 'Dr. Ananya Iyer',
+    number: '+91 94450 78901',
+    type: 2,
+    date: new Date(Date.now() - 1000 * 60 * 60 * 2),
+    durationSeconds: 258,
+    simSlot: 1,
+  },
+  {
+    id: '8',
+    name: 'Rohan Verma',
+    number: '+91 98230 11223',
+    type: 1,
+    date: new Date(Date.now() - 1000 * 60 * 60 * 5),
+    durationSeconds: 1112,
+    simSlot: 2,
+  },
+  {
+    id: '9',
+    name: 'Priya Nair',
+    number: '+91 91234 56789',
+    type: 2,
+    date: new Date(Date.now() - 1000 * 60 * 60 * 8),
+    durationSeconds: 135,
+    simSlot: 2,
+  },
+  {
+    id: '10',
+    name: 'Vikram Malhotra',
+    number: '+91 99887 65432',
+    type: 1,
+    date: new Date(Date.now() - 1000 * 60 * 60 * 20),
+    durationSeconds: 410,
+    simSlot: 1,
+  },
+  {
+    id: '11',
+    name: 'Neha Gupta',
+    number: '+91 97112 34567',
+    type: 3,
+    date: new Date(Date.now() - 1000 * 60 * 60 * 22),
+    durationSeconds: 0,
+    simSlot: 1,
+  },
+  {
+    id: '12',
+    name: 'Customer Care (Jio / Airtel)',
     number: '1800-208-9898',
     type: 5,
-    date: new Date(Date.now() - 1000 * 60 * 60 * 28),
+    date: new Date(Date.now() - 1000 * 60 * 60 * 30),
     durationSeconds: 0,
+    simSlot: 2,
+  },
+  {
+    id: '13',
+    name: 'Rajesh Patel',
+    number: '+91 98920 44556',
+    type: 1,
+    date: new Date(Date.now() - 1000 * 60 * 60 * 48),
+    durationSeconds: 35,
+    simSlot: 1,
+  },
+  {
+    id: '14',
+    name: 'Kavita Sundaram',
+    number: '+91 98401 23456',
+    type: 2,
+    date: new Date(Date.now() - 1000 * 60 * 60 * 72),
+    durationSeconds: 320,
     simSlot: 2,
   },
 ];
@@ -197,12 +260,12 @@ function formatCallTimer(sec: number): string {
 }
 
 const MOCK_CONTACTS = [
-  { name: 'Shalini 🐼', number: '+91 62617 49807', initials: 'SP', color: 'bg-purple-100 text-purple-700' },
-  { name: 'Rohan Verma', number: '+91 98765 43210', initials: 'RV', color: 'bg-blue-100 text-blue-700' },
-  { name: 'Priya Nair', number: '+91 91234 56789', initials: 'PN', color: 'bg-emerald-100 text-emerald-700' },
-  { name: 'Aarav Sharma', number: '+91 98765 43210', initials: 'AS', color: 'bg-indigo-100 text-indigo-700' },
-  { name: 'Papa (Dad)', number: '+91 98220 11223', initials: 'PD', color: 'bg-amber-100 text-amber-700' },
-  { name: 'Mummy (Mom)', number: '+91 98234 56789', initials: 'MM', color: 'bg-rose-100 text-rose-700' },
+  { name: 'Aarav Sharma', number: '+91 98765 43210', initials: 'AS', color: 'bg-purple-100 text-purple-700' },
+  { name: 'Dr. Ananya Iyer', number: '+91 94450 78901', initials: 'AI', color: 'bg-emerald-100 text-emerald-700' },
+  { name: 'Rohan Verma', number: '+91 98230 11223', initials: 'RV', color: 'bg-blue-100 text-blue-700' },
+  { name: 'Priya Nair', number: '+91 91234 56789', initials: 'PN', color: 'bg-indigo-100 text-indigo-700' },
+  { name: 'Vikram Malhotra', number: '+91 99887 65432', initials: 'VM', color: 'bg-amber-100 text-amber-700' },
+  { name: 'Neha Gupta', number: '+91 97112 34567', initials: 'NG', color: 'bg-rose-100 text-rose-700' },
 ];
 
 function formatCallTime(date: Date): string {
@@ -438,8 +501,8 @@ export default function App() {
   // Fake Call Simulator States
   const [isFakeCallModalOpen, setIsFakeCallModalOpen] = useState(false);
   const [fakeCallBrand, setFakeCallBrand] = useState<'pixel' | 'samsung' | 'hyperos' | 'ios'>('pixel');
-  const [fakeCallName, setFakeCallName] = useState('Boss');
-  const [fakeCallNumber, setFakeCallNumber] = useState('+91 98765 43210');
+  const [fakeCallName, setFakeCallName] = useState('Dr. Ananya Iyer');
+  const [fakeCallNumber, setFakeCallNumber] = useState('+91 94450 78901');
   const [fakeCallSimSlot, setFakeCallSimSlot] = useState<1 | 2>(defaultSlot);
   const [fakeCallDelaySec, setFakeCallDelaySec] = useState<number>(3);
   const [fakeCallMinsInput, setFakeCallMinsInput] = useState('0');
@@ -467,38 +530,6 @@ export default function App() {
   const [durationHours, setDurationHours] = useState<string>('0');
   const [durationMins, setDurationMins] = useState<string>('1');
   const [durationSecs, setDurationSecs] = useState<string>('0');
-
-  // Fast-Scroll Slider States (History & Home)
-  const [historyScrollFraction, setHistoryScrollFraction] = useState(0);
-  const [isHistoryScrolling, setIsHistoryScrolling] = useState(false);
-  const historyScrollTimerRef = useRef<any>(null);
-  const historyContainerRef = useRef<HTMLDivElement>(null);
-
-  const handleHistoryScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    const maxScroll = scrollHeight - clientHeight;
-    if (maxScroll > 0) {
-      setHistoryScrollFraction(scrollTop / maxScroll);
-      setIsHistoryScrolling(true);
-      if (historyScrollTimerRef.current) clearTimeout(historyScrollTimerRef.current);
-      historyScrollTimerRef.current = setTimeout(() => setIsHistoryScrolling(false), 1200);
-    }
-  };
-
-  const [homeScrollFraction, setHomeScrollFraction] = useState(0);
-  const [isHomeScrolling, setIsHomeScrolling] = useState(false);
-  const homeScrollTimerRef = useRef<any>(null);
-
-  const handleHomeScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    const maxScroll = scrollHeight - clientHeight;
-    if (maxScroll > 0) {
-      setHomeScrollFraction(scrollTop / maxScroll);
-      setIsHomeScrolling(true);
-      if (homeScrollTimerRef.current) clearTimeout(homeScrollTimerRef.current);
-      homeScrollTimerRef.current = setTimeout(() => setIsHomeScrolling(false), 1200);
-    }
-  };
 
   // Google Phone Standard: Contact Grouping
   const groupedLogs: ContactCallGroup[] = useMemo(() => {
@@ -546,7 +577,7 @@ export default function App() {
     }
   }, [groupedLogs]);
 
-  // Audit View Parameter Router for visual testing
+  // Audit View Parameter Router for visual testing & Play Store captures
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const view = params.get('view');
@@ -558,11 +589,16 @@ export default function App() {
     } else if (view === 'toast') {
       showToast('Fake call scheduled in 3s');
     } else if (view === 'add') {
-      openAddModal();
+      openAddModal({ name: 'Aarav Sharma', number: '+91 98765 43210', simSlot: 1 });
     } else if (view === 'fake_modal') {
       setIsFakeCallModalOpen(true);
     } else if (view === 'fake_incoming') {
+      setFakeCallBrand('pixel');
+      setFakeCallName('Dr. Ananya Iyer');
+      setFakeCallNumber('+91 94450 78901');
       setFakeCallState('incoming');
+    } else if (view === 'missed') {
+      setActiveCategoryFilter(3);
     }
   }, [groupedLogs]);
 
@@ -761,78 +797,86 @@ export default function App() {
   const activeDevice = DEVICE_PRESETS[deviceKey];
   const touchStartXRef = useRef(0);
 
+  const isPlayStoreMode = typeof window !== 'undefined' && (
+    new URLSearchParams(window.location.search).get('playstore') === 'true' ||
+    new URLSearchParams(window.location.search).get('mode') === 'playstore'
+  );
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center py-6 px-4 select-none font-sans">
+    <div className={`min-h-screen text-slate-100 flex flex-col items-center select-none font-sans ${
+      isPlayStoreMode ? 'bg-[#FEF7FF] p-0 overflow-hidden justify-center' : 'bg-slate-950 py-6 px-4'
+    }`}>
       {/* Top Device Switcher & SIM Hardware Controls */}
-      <div className="w-full max-w-md flex items-center justify-between mb-4 px-2">
-        <div className="flex items-center gap-2.5">
-          <AppLogo size={28} />
-          <div>
-            <h2 className="text-xs font-bold tracking-tight">
-              <span className="text-white">Call</span> <span className="text-[#A87FFB]">Craft</span>
-            </h2>
-            <p className="text-[10px] text-[#6750A4] font-semibold">Google Phone Standard</p>
+      {!isPlayStoreMode && (
+        <div className="w-full max-w-md flex items-center justify-between mb-4 px-2">
+          <div className="flex items-center gap-2.5">
+            <AppLogo size={28} />
+            <div>
+              <h2 className="text-xs font-bold tracking-tight">
+                <span className="text-white">Call</span> <span className="text-[#A87FFB]">Craft</span>
+              </h2>
+              <p className="text-[10px] text-[#6750A4] font-semibold">Google Phone Standard</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Device Size Switcher */}
+            <div className="hidden sm:flex items-center gap-0.5 bg-slate-900 p-1 rounded-xl border border-slate-800 text-[10px]">
+              {(['compact', 'standard', 'large'] as const).map((key) => (
+                <button
+                  key={key}
+                  onClick={() => setDeviceKey(key)}
+                  className={`px-2 py-0.5 rounded-lg font-bold transition capitalize ${
+                    deviceKey === key ? 'bg-slate-700 text-white shadow-xs' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {key}
+                </button>
+              ))}
+            </div>
+
+            {/* Live SIM Hardware State Switcher */}
+            <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-[10px]">
+              <span className="text-slate-400 px-1 font-bold">SIM:</span>
+              {(['dual', 'sim1_only', 'sim2_only'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setSimHardwareMode(mode)}
+                  className={`px-2 py-0.5 rounded-lg font-bold transition ${
+                    simHardwareMode === mode ? 'bg-[#6750A4] text-white shadow-xs' : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {mode === 'dual' ? 'Dual' : mode === 'sim1_only' ? 'SIM 1' : 'SIM 2'}
+                </button>
+              ))}
+            </div>
+
+            {/* Replay Splash Button */}
+            <button
+              onClick={replaySplash}
+              className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-[#A87FFB] px-2.5 py-1.5 rounded-xl border border-slate-800 text-[10px] font-bold transition shadow-xs"
+              title="Replay Splash Screen"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#A87FFB]" />
+              <span className="hidden sm:inline">Splash</span>
+            </button>
           </div>
         </div>
+      )}
 
-        <div className="flex items-center gap-2">
-          {/* Device Size Switcher */}
-          <div className="hidden sm:flex items-center gap-0.5 bg-slate-900 p-1 rounded-xl border border-slate-800 text-[10px]">
-            {(['compact', 'standard', 'large'] as const).map((key) => (
-              <button
-                key={key}
-                onClick={() => setDeviceKey(key)}
-                className={`px-2 py-0.5 rounded-lg font-bold transition capitalize ${
-                  deviceKey === key ? 'bg-slate-700 text-white shadow-xs' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                {key}
-              </button>
-            ))}
-          </div>
-
-          {/* Live SIM Hardware State Switcher */}
-          <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800 text-[10px]">
-            <span className="text-slate-400 px-1 font-bold">SIM:</span>
-            {(['dual', 'sim1_only', 'sim2_only'] as const).map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setSimHardwareMode(mode)}
-                className={`px-2 py-0.5 rounded-lg font-bold transition ${
-                  simHardwareMode === mode ? 'bg-[#6750A4] text-white shadow-xs' : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                {mode === 'dual' ? 'Dual' : mode === 'sim1_only' ? 'SIM 1' : 'SIM 2'}
-              </button>
-            ))}
-          </div>
-
-          {/* Replay Splash Button */}
-          <button
-            onClick={replaySplash}
-            className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-[#A87FFB] px-2.5 py-1.5 rounded-xl border border-slate-800 text-[10px] font-bold transition shadow-xs"
-            title="Replay Splash Screen"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-[#A87FFB]" />
-            <span className="hidden sm:inline">Splash</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Material You Pixel Phone Frame */}
+      {/* Material You Phone Frame (Status Bar and Notch Removed) */}
       <div
-        style={{ width: `${activeDevice.width}px`, height: `${activeDevice.height}px` }}
-        className="relative bg-[#FEF7FF] text-[#1D1B20] rounded-[44px] border-[10px] border-slate-900 shadow-2xl overflow-hidden flex flex-col transition-all duration-300"
+        style={{
+          width: isPlayStoreMode ? '390px' : `${activeDevice.width}px`,
+          height: isPlayStoreMode ? '844px' : `${activeDevice.height}px`,
+        }}
+        className={`relative bg-[#FEF7FF] text-[#1D1B20] overflow-hidden flex flex-col transition-all duration-300 ${
+          isPlayStoreMode
+            ? 'rounded-none border-none shadow-none mx-auto'
+            : 'rounded-[44px] border-[10px] border-slate-900 shadow-2xl'
+        }`}
       >
-        {/* Android Status Bar */}
-        <div className="h-10 px-7 pt-2 flex items-center justify-between text-xs font-bold text-[#49454F] shrink-0">
-          <span>9:41</span>
-          <div className="w-20 h-4 bg-slate-900 rounded-full" />
-          <div className="flex items-center gap-1.5 text-[11px]">
-            <span>{hasSim1 && hasSim2 ? '5G • 5G' : '5G'}</span>
-            <span>100%</span>
-          </div>
-        </div>
+        {/* Status Bar & Notch Removed */}
 
         {/* SCREEN CAROUSEL CONTAINER */}
         <div className="flex-1 overflow-hidden relative w-full flex">
@@ -1049,11 +1093,7 @@ export default function App() {
                   }}
                 >
                   {/* Pane 1: All Groups */}
-                  <div className="relative w-1/2 h-full">
-                    <div
-                      onScroll={handleHomeScroll}
-                      className="w-full h-full overflow-y-auto no-scrollbar divide-y divide-[#E7E0EC]/70 px-4 pr-5 pb-24"
-                    >
+                  <div className="w-1/2 h-full overflow-y-auto no-scrollbar divide-y divide-[#E7E0EC]/70 px-4 pb-24">
                     {allFilteredGroups.length === 0 ? (
                       <div className="py-20 text-center text-sm text-[#79747E] font-medium">
                         No calls found
@@ -1159,39 +1199,8 @@ export default function App() {
                     )}
                   </div>
 
-                  {/* Home Fast-Scroll Vertical Slider for All Calls */}
-                  {allFilteredGroups.length > 1 && (
-                    <div className="absolute right-1 top-2 bottom-24 w-2.5 flex items-center justify-center pointer-events-none z-10">
-                      <div className="w-1 h-full bg-[#6750A4]/15 rounded-full" />
-                      <div
-                        className={`absolute w-1.5 rounded-full bg-gradient-to-b from-[#7C5CE6] to-[#6750A4] shadow-sm transition-opacity duration-200 ${
-                          isHomeScrolling ? 'opacity-100' : 'opacity-60'
-                        }`}
-                        style={{
-                          height: `${Math.max(28, Math.min(90, (3 / allFilteredGroups.length) * 180))}px`,
-                          top: `calc(${homeScrollFraction * 100}% - ${homeScrollFraction * Math.max(28, Math.min(90, (3 / allFilteredGroups.length) * 180))}px)`,
-                        }}
-                      />
-                      {isHomeScrolling && allFilteredGroups.length > 3 && (
-                        <div
-                          className="absolute right-4 px-2 py-0.5 rounded-lg bg-[#1E1F24] text-white text-[9.5px] font-bold shadow-md border border-[#6750A4]/40 whitespace-nowrap animate-in fade-in duration-150"
-                          style={{
-                            top: `calc(${homeScrollFraction * 100}% - 8px)`,
-                          }}
-                        >
-                          {Math.min(allFilteredGroups.length, Math.round(homeScrollFraction * (allFilteredGroups.length - 1)) + 1)} / {allFilteredGroups.length}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
                 {/* Pane 2: Missed Groups */}
-                <div className="relative w-1/2 h-full">
-                  <div
-                    onScroll={handleHomeScroll}
-                    className="w-full h-full overflow-y-auto no-scrollbar divide-y divide-[#E7E0EC]/70 px-4 pr-5 pb-24"
-                  >
+                <div className="w-1/2 h-full overflow-y-auto no-scrollbar divide-y divide-[#E7E0EC]/70 px-4 pb-24">
                     {missedFilteredGroups.length === 0 ? (
                       <div className="py-20 text-center text-sm text-[#79747E] font-medium">
                         No missed calls found
@@ -1263,35 +1272,8 @@ export default function App() {
                       })
                     )}
                   </div>
-
-                  {/* Home Fast-Scroll Vertical Slider for Missed Calls */}
-                  {missedFilteredGroups.length > 1 && (
-                    <div className="absolute right-1 top-2 bottom-24 w-2.5 flex items-center justify-center pointer-events-none z-10">
-                      <div className="w-1 h-full bg-[#6750A4]/15 rounded-full" />
-                      <div
-                        className={`absolute w-1.5 rounded-full bg-gradient-to-b from-[#7C5CE6] to-[#6750A4] shadow-sm transition-opacity duration-200 ${
-                          isHomeScrolling ? 'opacity-100' : 'opacity-60'
-                        }`}
-                        style={{
-                          height: `${Math.max(28, Math.min(90, (3 / missedFilteredGroups.length) * 180))}px`,
-                          top: `calc(${homeScrollFraction * 100}% - ${homeScrollFraction * Math.max(28, Math.min(90, (3 / missedFilteredGroups.length) * 180))}px)`,
-                        }}
-                      />
-                      {isHomeScrolling && missedFilteredGroups.length > 3 && (
-                        <div
-                          className="absolute right-4 px-2 py-0.5 rounded-lg bg-[#1E1F24] text-white text-[9.5px] font-bold shadow-md border border-[#6750A4]/40 whitespace-nowrap animate-in fade-in duration-150"
-                          style={{
-                            top: `calc(${homeScrollFraction * 100}% - 8px)`,
-                          }}
-                        >
-                          {Math.min(missedFilteredGroups.length, Math.round(homeScrollFraction * (missedFilteredGroups.length - 1)) + 1)} / {missedFilteredGroups.length}
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
-            </div>
 
               {/* Material 3 FAB */}
               {!isSelectionMode && (
@@ -1827,13 +1809,8 @@ export default function App() {
                 </span>
               </div>
 
-              {/* Smooth Scrollable Call History Cards with Eye-Catching Vertical Slider */}
-              <div className="relative flex-1 min-h-0">
-                <div
-                  ref={historyContainerRef}
-                  onScroll={handleHistoryScroll}
-                  className="h-full overflow-y-auto no-scrollbar space-y-2 pr-3 min-h-0"
-                >
+              {/* Smooth Scrollable Call History Cards (No cutting off, no overlap) */}
+              <div className="flex-1 overflow-y-auto no-scrollbar space-y-2 pr-0.5 min-h-0">
                 {viewingGroup.calls.map((call) => {
                   const typeMeta = CALL_TYPES.find((c) => c.type === call.type) || CALL_TYPES[0];
                   const Icon = typeMeta.icon;
@@ -1892,38 +1869,8 @@ export default function App() {
                 {/* Generous bottom spacing so the last card is never cut off or touching the phone bezel */}
                 <div className="h-6 shrink-0" />
               </div>
-
-              {/* Eye-Catching Vertical Scroll Slider */}
-              {viewingGroup.calls.length > 1 && (
-                <div className="absolute right-0 top-1 bottom-1 w-2.5 flex items-center justify-center pointer-events-none">
-                  {/* Background Track */}
-                  <div className="w-1 h-full bg-[#6750A4]/15 rounded-full" />
-                  {/* Thumb */}
-                  <div
-                    className={`absolute w-1.5 rounded-full bg-gradient-to-b from-[#7C5CE6] to-[#6750A4] shadow-sm transition-opacity duration-200 ${
-                      isHistoryScrolling ? 'opacity-100' : 'opacity-60'
-                    }`}
-                    style={{
-                      height: `${Math.max(28, Math.min(100, (4 / viewingGroup.calls.length) * 220))}px`,
-                      top: `calc(${historyScrollFraction * 100}% - ${historyScrollFraction * Math.max(28, Math.min(100, (4 / viewingGroup.calls.length) * 220))}px)`,
-                    }}
-                  />
-                  {/* Live Position Counter Badge */}
-                  {isHistoryScrolling && viewingGroup.calls.length > 3 && (
-                    <div
-                      className="absolute right-4 px-2 py-0.5 rounded-lg bg-[#1E1F24] text-white text-[9.5px] font-bold shadow-md border border-[#6750A4]/40 whitespace-nowrap animate-in fade-in duration-150"
-                      style={{
-                        top: `calc(${historyScrollFraction * 100}% - 8px)`,
-                      }}
-                    >
-                      {Math.min(viewingGroup.calls.length, Math.round(historyScrollFraction * (viewingGroup.calls.length - 1)) + 1)} / {viewingGroup.calls.length}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </div>
-        </div>
         )}
 
         {/* Modal Bottom Sheet for Add / Edit */}
