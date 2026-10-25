@@ -12,31 +12,35 @@ It also features a built-in **React + Vite + Tailwind** live web simulator in `p
 
 ---
 
-## 📸 Screenshots Showcase
+## 📸 Screenshots Showcase (01 to 13)
 
 <div align="center">
 
-### 1. Home & Call Log Management
-| Recents History | Contact Call History | Multi-Select & Batch Mode | Missed Calls Filter |
+| 01. Welcome Screen | 02. Organize Call Logs | 03. Missed Calls Tab | 04. Android XML Backup |
 | :---: | :---: | :---: | :---: |
-| <img src="playstore_market_assets/android_1_2.jpg" width="220" alt="Recents Call History" /> | <img src="playstore_market_assets/android_1_12.jpg" width="220" alt="Contact Call History Sheet" /> | <img src="playstore_market_assets/android_1_13.jpg" width="220" alt="Multi-Select Batch Mode" /> | <img src="playstore_market_assets/android_1_3.jpg" width="220" alt="Missed Calls Tab" /> |
-| *Smart contact grouping & Dual-SIM tracking* | *Detailed timeline with 1-tap edit & delete* | *Bulk edit types, switch SIM & mass delete* | *Instant filter for missed contact entries* |
+| <img src="playstore_market_assets/android_1_1.jpg" width="220" alt="01. Welcome to CallCraft" /> | <img src="playstore_market_assets/android_1_2.jpg" width="220" alt="02. Organize & Edit Call Logs" /> | <img src="playstore_market_assets/android_1_3.jpg" width="220" alt="03. Track Every Missed Call" /> | <img src="playstore_market_assets/android_1_4.jpg" width="220" alt="04. Backup & Restore in XML" /> |
+| **01. Welcome to CallCraft**<br />*Modern, Private & Smart Studio* | **02. Organize & Edit Logs**<br />*Contact Grouping & Dual-SIM* | **03. Track Missed Calls**<br />*Instant Filters & Highlights* | **04. Backup & Restore XML**<br />*Standard Android XML Format* |
 
 <br />
 
-### 2. Add / Edit & Android XML Backup Engine
-| Quick Call Entry | Precision Duration & Time | Android Default XML Backup | Settings & Privacy |
+| 05. Quick Call Entry | 06. Custom Duration & Time | 07. Fake Call Simulator | 08. Schedule Timers |
 | :---: | :---: | :---: | :---: |
-| <img src="playstore_market_assets/android_1_5.jpg" width="220" alt="Quick Call Entry Modal" /> | <img src="playstore_market_assets/android_1_6.jpg" width="220" alt="Precision Duration & Time Presets" /> | <img src="playstore_market_assets/android_1_4.jpg" width="220" alt="Android Standard XML Backup" /> | <img src="playstore_market_assets/android_1_11.jpg" width="220" alt="Settings & Privacy Diagnostics" /> |
-| *Add custom numbers with contact picker* | *Duration presets (30s, 1m, 5m, 1h) & date picker* | *Standard XML export & import (SMS Backup compatible)* | *Dialer role permission & offline local storage* |
+| <img src="playstore_market_assets/android_1_5.jpg" width="220" alt="05. Quickly Add New Calls" /> | <img src="playstore_market_assets/android_1_6.jpg" width="220" alt="06. Custom Date, Time & Duration" /> | <img src="playstore_market_assets/android_1_7.jpg" width="220" alt="07. Realistic Fake Call Simulator" /> | <img src="playstore_market_assets/android_1_8.jpg" width="220" alt="08. Schedule Incoming Fake Calls" /> |
+| **05. Quickly Add Calls**<br />*Contact Picker & SIM Slot* | **06. Precision Date & Time**<br />*Duration Presets (30s, 1m, 5m)* | **07. 4 Brand Themes**<br />*Pixel, Samsung, Xiaomi & iOS* | **08. Schedule Fake Calls**<br />*Custom Timer Delays & Audio* |
 
 <br />
 
-### 3. Realistic Fake Call Simulator
-| 4 OS Brand Themes | Timers & Ringtone Sound | Authentic Incoming Screen | Interactive In-Call Screen |
+| 09. Incoming Call Screen | 10. Interactive In-Call | 11. Settings & Privacy | 12. Contact History Sheet |
 | :---: | :---: | :---: | :---: |
-| <img src="playstore_market_assets/android_1_7.jpg" width="220" alt="Fake Call Brand Themes" /> | <img src="playstore_market_assets/android_1_8.jpg" width="220" alt="Timer Delays & Ringtone Settings" /> | <img src="playstore_market_assets/android_1_9.jpg" width="220" alt="Full Screen Fake Incoming Call" /> | <img src="playstore_market_assets/android_1_10.jpg" width="220" alt="Active In-Call Screen with Keypad" /> |
-| *Pixel, Samsung One UI, Xiaomi & iOS themes* | *Countdown triggers (3s, 10s, 30s) + vibration* | *Realistic slide-to-answer interface* | *Working keypad, live duration & realistic audio* |
+| <img src="playstore_market_assets/android_1_9.jpg" width="220" alt="09. Lifelike Incoming Call Screen" /> | <img src="playstore_market_assets/android_1_10.jpg" width="220" alt="10. Interactive In-Call Screen" /> | <img src="playstore_market_assets/android_1_11.jpg" width="220" alt="11. 100% Private & Open Source" /> | <img src="playstore_market_assets/android_1_12.jpg" width="220" alt="12. Contact Call History" /> |
+| **09. Lifelike Incoming UI**<br />*Slide to Answer / Decline* | **10. Active Call Controls**<br />*Live Duration & Dialpad Keypad* | **11. 100% Private & Offline**<br />*Zero Analytics • No Tracking* | **12. Contact Call History**<br />*Detailed Chronological Log* |
+
+<br />
+
+| 13. Multi-Select & Batch Actions |
+| :---: |
+| <img src="playstore_market_assets/android_1_13.jpg" width="220" alt="13. Multi-Select & Batch Actions" /> |
+| **13. Multi-Select & Batch Mode**<br />*Bulk Edit Types, Switch SIM & Mass Delete* |
 
 </div>
 
