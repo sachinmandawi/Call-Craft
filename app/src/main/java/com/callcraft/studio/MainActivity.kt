@@ -270,6 +270,52 @@ fun CallLogEditorApp(repository: CallLogRepository) {
         ActivityResultContracts.StartActivityForResult()
     ) { refreshLogs() }
 
+    // Android Standard CallLog XML Export & Import Launchers
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/xml")
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                try {
+                    context.contentResolver.openOutputStream(uri)?.use { out ->
+                        val res = repository.exportCallLogsToXml(out)
+                        if (res.isSuccess) {
+                            val count = res.getOrDefault(0)
+                            showBottomToast("Exported $count call logs (Android XML)")
+                        } else {
+                            showBottomToast("Export failed")
+                        }
+                    }
+                } catch (e: Exception) {
+                    showBottomToast("Export error: ${e.localizedMessage}")
+                }
+            }
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                try {
+                    context.contentResolver.openInputStream(uri)?.use { input ->
+                        val res = repository.importCallLogs(input)
+                        if (res.isSuccess) {
+                            val count = res.getOrDefault(0)
+                            refreshLogs()
+                            showBottomToast("Imported $count call logs successfully")
+                        } else {
+                            showBottomToast("Import failed: invalid format")
+                        }
+                    }
+                } catch (e: Exception) {
+                    showBottomToast("Import error: ${e.localizedMessage}")
+                }
+            }
+        }
+    }
+
     LaunchedEffect(Unit) {
         permissionLauncher.launch(
             arrayOf(
@@ -413,6 +459,92 @@ fun CallLogEditorApp(repository: CallLogRepository) {
                                                 onClick = {
                                                     showTopMenu = false
                                                     isFakeCallSetupOpen = true
+                                                }
+                                            )
+
+                                            HorizontalDivider(
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp),
+                                                color = LilacBorder.copy(alpha = 0.6f)
+                                            )
+
+                                            // Android Default Standard XML Export
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Column {
+                                                        Text(
+                                                            "Export Call Logs",
+                                                            fontSize = 13.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = LilacText
+                                                        )
+                                                        Text(
+                                                            "Android standard XML format",
+                                                            fontSize = 10.sp,
+                                                            color = LilacTextMuted
+                                                        )
+                                                    }
+                                                },
+                                                leadingIcon = {
+                                                    Surface(
+                                                        shape = RoundedCornerShape(10.dp),
+                                                        color = StatusIncoming.copy(alpha = 0.15f),
+                                                        modifier = Modifier.size(32.dp)
+                                                    ) {
+                                                        Box(contentAlignment = Alignment.Center) {
+                                                            Icon(
+                                                                Icons.Default.Download,
+                                                                contentDescription = null,
+                                                                tint = StatusIncoming,
+                                                                modifier = Modifier.size(18.dp)
+                                                            )
+                                                        }
+                                                    }
+                                                },
+                                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                                                onClick = {
+                                                    showTopMenu = false
+                                                    val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+                                                    exportLauncher.launch("calls_backup_$dateStr.xml")
+                                                }
+                                            )
+
+                                            // Android Default Standard XML Import (with JSON fallback)
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Column {
+                                                        Text(
+                                                            "Import Call Logs",
+                                                            fontSize = 13.sp,
+                                                            fontWeight = FontWeight.Bold,
+                                                            color = LilacText
+                                                        )
+                                                        Text(
+                                                            "Restore XML / JSON backup",
+                                                            fontSize = 10.sp,
+                                                            color = LilacTextMuted
+                                                        )
+                                                    }
+                                                },
+                                                leadingIcon = {
+                                                    Surface(
+                                                        shape = RoundedCornerShape(10.dp),
+                                                        color = StatusOutgoing.copy(alpha = 0.15f),
+                                                        modifier = Modifier.size(32.dp)
+                                                    ) {
+                                                        Box(contentAlignment = Alignment.Center) {
+                                                            Icon(
+                                                                Icons.Default.Upload,
+                                                                contentDescription = null,
+                                                                tint = StatusOutgoing,
+                                                                modifier = Modifier.size(18.dp)
+                                                            )
+                                                        }
+                                                    }
+                                                },
+                                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                                                onClick = {
+                                                    showTopMenu = false
+                                                    importLauncher.launch(arrayOf("text/xml", "application/xml", "application/json", "text/plain", "*/*"))
                                                 }
                                             )
 

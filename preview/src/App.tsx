@@ -35,6 +35,7 @@ import {
   ExternalLink,
   Bug,
   Download,
+  Upload,
   RefreshCw,
   Sparkles,
   Mail,
@@ -520,6 +521,109 @@ export default function App() {
   const [isHold, setIsHold] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
 
+  // Backup Import & Export Handlers (Android Standard XML Format + Fallback)
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExportLogs = () => {
+    setIsTopMenuOpen(false);
+    const escapeXml = (str: string) =>
+      str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+
+    const xmlItems = logs
+      .map((log) => {
+        const dateStr = log.date.toLocaleString('en-US', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+        return `  <call number="${escapeXml(log.number)}" duration="${log.durationSeconds}" date="${log.date.getTime()}" type="${log.type}" readable_date="${escapeXml(dateStr)}" contact_name="${escapeXml(log.name)}" subscription_id="${log.simSlot}" />`;
+      })
+      .join('\n');
+
+    const xmlContent = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>\n<calls count="${logs.length}">\n${xmlItems}\n</calls>`;
+
+    const blob = new Blob([xmlContent], { type: 'text/xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.href = url;
+    downloadAnchor.download = `calls_backup_${new Date().toISOString().slice(0, 10)}.xml`;
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${logs.length} call logs (Android XML format)`);
+  };
+
+  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const text = (event.target?.result as string) || '';
+        const imported: CallLogItem[] = [];
+
+        if (text.trim().startsWith('<')) {
+          // Parse Android Standard CallLog XML
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(text, 'text/xml');
+          const callNodes = xmlDoc.getElementsByTagName('call');
+          for (let i = 0; i < callNodes.length; i++) {
+            const node = callNodes[i];
+            const number = node.getAttribute('number') || '';
+            const name = node.getAttribute('contact_name') || node.getAttribute('name') || 'Unknown';
+            const type = Number(node.getAttribute('type') || 1) as CallType;
+            const duration = Number(node.getAttribute('duration') || 0);
+            const dateVal = Number(node.getAttribute('date')) || Date.now();
+            const subId = node.getAttribute('subscription_id') || '1';
+            const simSlot = subId === '2' ? 2 : 1;
+
+            if (number) {
+              imported.push({
+                id: String(Date.now() + Math.random()),
+                name,
+                number,
+                type,
+                date: new Date(dateVal),
+                durationSeconds: duration,
+                simSlot,
+              });
+            }
+          }
+        } else if (text.trim().startsWith('[') || text.trim().startsWith('{')) {
+          // JSON Fallback
+          const parsed = JSON.parse(text);
+          const arr = Array.isArray(parsed) ? parsed : parsed.calls || [];
+          for (const item of arr) {
+            imported.push({
+              id: String(item.id || Date.now() + Math.random()),
+              name: String(item.name || item.contact_name || 'Unknown'),
+              number: String(item.number || ''),
+              type: Number(item.type || 1) as CallType,
+              date: new Date(item.date || item.dateMillis || Date.now()),
+              durationSeconds: Number(item.durationSeconds || item.duration || 0),
+              simSlot: (item.simSlot === 2 || item.subscription_id === '2' ? 2 : 1) as 1 | 2,
+            });
+          }
+        }
+
+        if (imported.length > 0) {
+          setLogs((prev) => [...imported, ...prev]);
+          showToast(`Imported ${imported.length} call logs successfully`);
+        } else {
+          showToast('No valid call log entries found in file');
+        }
+      } catch (err) {
+        showToast('Failed to parse backup file');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
   // Form State
   const [formName, setFormName] = useState('');
   const [formNumber, setFormNumber] = useState('');
@@ -599,6 +703,8 @@ export default function App() {
       setFakeCallState('incoming');
     } else if (view === 'missed') {
       setActiveCategoryFilter(3);
+    } else if (view === 'menu' || view === 'topmenu') {
+      setIsTopMenuOpen(true);
     }
   }, [groupedLogs]);
 
@@ -978,6 +1084,39 @@ export default function App() {
 
                             <div className="h-px bg-[#E7E0EC] my-1 mx-3" />
 
+                            {/* Export Call Logs (Android XML) */}
+                            <button
+                              onClick={handleExportLogs}
+                              className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-[#1D1B20] hover:bg-[#F3EDF7] flex items-center gap-2.5 transition"
+                            >
+                              <div className="w-[30px] h-[30px] rounded-[10px] bg-[#10B981]/15 text-[#10B981] flex items-center justify-center shrink-0">
+                                <Download className="w-4 h-4" />
+                              </div>
+                              <div className="truncate">
+                                <div className="text-xs font-bold text-[#1D1B20]">Export Call Logs</div>
+                                <div className="text-[10px] text-[#79747E] font-normal truncate">Android standard XML</div>
+                              </div>
+                            </button>
+
+                            {/* Import Call Logs */}
+                            <button
+                              onClick={() => {
+                                setIsTopMenuOpen(false);
+                                fileInputRef.current?.click();
+                              }}
+                              className="w-full px-3.5 py-2.5 text-left text-xs font-bold text-[#1D1B20] hover:bg-[#F3EDF7] flex items-center gap-2.5 transition"
+                            >
+                              <div className="w-[30px] h-[30px] rounded-[10px] bg-[#3B82F6]/15 text-[#3B82F6] flex items-center justify-center shrink-0">
+                                <Upload className="w-4 h-4" />
+                              </div>
+                              <div className="truncate">
+                                <div className="text-xs font-bold text-[#1D1B20]">Import Call Logs</div>
+                                <div className="text-[10px] text-[#79747E] font-normal truncate">Restore from XML / JSON</div>
+                              </div>
+                            </button>
+
+                            <div className="h-px bg-[#E7E0EC] my-1 mx-3" />
+
                             <button
                               onClick={() => {
                                 setIsTopMenuOpen(false);
@@ -996,6 +1135,13 @@ export default function App() {
                           </div>
                         </>
                       )}
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept=".xml,.json,.csv"
+                        className="hidden"
+                        onChange={handleFileImport}
+                      />
                     </div>
                   </div>
                 </div>

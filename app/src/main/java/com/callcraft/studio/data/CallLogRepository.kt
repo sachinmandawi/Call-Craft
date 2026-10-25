@@ -9,6 +9,15 @@ import android.provider.CallLog
 import android.telephony.SubscriptionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.InputStream
+import java.io.OutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import org.json.JSONArray
+import org.json.JSONObject
+import org.xmlpull.v1.XmlPullParser
+import org.xmlpull.v1.XmlPullParserFactory
 
 data class SimSlotInfo(
     val slotIndex: Int, // 0 for SIM 1, 1 for SIM 2
@@ -400,5 +409,111 @@ class CallLogRepository(private val context: Context) {
             e.printStackTrace()
             0
         }
+    }
+
+    // Android Default Standard CallLog XML Export (compatible with SMS Backup & Restore)
+    suspend fun exportCallLogsToXml(outputStream: OutputStream): Result<Int> = withContext(Dispatchers.IO) {
+        try {
+            val logs = getCallLogs()
+            val sdf = SimpleDateFormat("dd MMM yyyy HH:mm:ss", Locale.US)
+            val sb = StringBuilder()
+            sb.append("<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>\n")
+            sb.append("<calls count=\"${logs.size}\">\n")
+            for (item in logs) {
+                val safeName = escapeXml(item.name)
+                val safeNum = escapeXml(item.number)
+                val dateStr = escapeXml(sdf.format(Date(item.dateMillis)))
+                val subId = if (item.simSlot == 2) "2" else "1"
+                sb.append("  <call number=\"$safeNum\" duration=\"${item.durationSeconds}\" date=\"${item.dateMillis}\" type=\"${item.type}\" readable_date=\"$dateStr\" contact_name=\"$safeName\" subscription_id=\"$subId\" />\n")
+            }
+            sb.append("</calls>\n")
+            outputStream.write(sb.toString().toByteArray(Charsets.UTF_8))
+            outputStream.flush()
+            Result.success(logs.size)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
+    // Universal Importer: Parses Android Standard CallLog XML with JSON Fallback
+    suspend fun importCallLogs(inputStream: InputStream): Result<Int> = withContext(Dispatchers.IO) {
+        try {
+            val content = inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+            var importedCount = 0
+
+            if (content.trim().startsWith("<")) {
+                val factory = XmlPullParserFactory.newInstance()
+                val parser = factory.newPullParser()
+                parser.setInput(content.reader())
+                var eventType = parser.eventType
+
+                while (eventType != XmlPullParser.END_DOCUMENT) {
+                    if (eventType == XmlPullParser.START_TAG && parser.name.equals("call", ignoreCase = true)) {
+                        val number = parser.getAttributeValue(null, "number") ?: ""
+                        val duration = parser.getAttributeValue(null, "duration")?.toLongOrNull() ?: 0L
+                        val date = parser.getAttributeValue(null, "date")?.toLongOrNull() ?: System.currentTimeMillis()
+                        val type = parser.getAttributeValue(null, "type")?.toIntOrNull() ?: CallLog.Calls.INCOMING_TYPE
+                        val name = parser.getAttributeValue(null, "contact_name")
+                            ?: parser.getAttributeValue(null, "name")
+                            ?: "Unknown"
+                        val subId = parser.getAttributeValue(null, "subscription_id")
+                            ?: parser.getAttributeValue(null, "sim_id")
+                        val simSlot = if (subId == "2" || subId?.contains("1") == true) 2 else 1
+
+                        if (number.isNotBlank()) {
+                            insertCallLog(
+                                name = name,
+                                number = number,
+                                type = type,
+                                dateMillis = date,
+                                durationSeconds = duration,
+                                simSlot = simSlot
+                            )
+                            importedCount++
+                        }
+                    }
+                    eventType = parser.next()
+                }
+            } else if (content.trim().startsWith("[") || content.trim().startsWith("{")) {
+                val jsonArray = if (content.trim().startsWith("[")) {
+                    JSONArray(content)
+                } else {
+                    JSONObject(content).optJSONArray("calls") ?: JSONArray()
+                }
+                for (i in 0 until jsonArray.length()) {
+                    val obj = jsonArray.getJSONObject(i)
+                    val number = obj.optString("number")
+                    if (number.isNotBlank()) {
+                        val name = obj.optString("name", obj.optString("contact_name", "Unknown"))
+                        val type = obj.optInt("type", CallLog.Calls.INCOMING_TYPE)
+                        val date = obj.optLong("date", obj.optLong("dateMillis", System.currentTimeMillis()))
+                        val duration = obj.optLong("durationSeconds", obj.optLong("duration", 0L))
+                        val simSlot = obj.optInt("simSlot", 1)
+                        insertCallLog(
+                            name = name,
+                            number = number,
+                            type = type,
+                            dateMillis = date,
+                            durationSeconds = duration,
+                            simSlot = simSlot
+                        )
+                        importedCount++
+                    }
+                }
+            }
+            Result.success(importedCount)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
+    private fun escapeXml(input: String): String {
+        return input.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&apos;")
     }
 }
